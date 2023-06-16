@@ -9,21 +9,21 @@ class Measurer{
 
 private:
 
-// Rotation Matrix from frame k
-Eigen::Matrix3f R_k;
+    // Rotation Matrix from frame k
+    Eigen::Matrix3f R_k;
 
-// Calibration Matrix K 
-Eigen::Matrix3f K;
+    // Calibration Matrix K 
+    Eigen::Matrix3f K;
 
-std::vector<Eigen::Vector3f> Find_Vs();
-std::vector<Eigen::Vector3f> Find_Ns();
+    std::vector<Eigen::Vector3f> Find_Vs();
+    std::vector<Eigen::Vector3f> Find_Ns();
 
 public:
 
-Measurer(Eigen::Matrix3f R_k, );
+    Measurer(Eigen::Matrix3f R_k, float* Depth_val);
 
-std::vector<Eigen::Vector3f> get_Vs();
-std::vector<Eigen::Vector3f> get_Ns();
+    std::vector<Eigen::Vector3f> get_Vs();
+    std::vector<Eigen::Vector3f> get_Ns();
 
 };
 
