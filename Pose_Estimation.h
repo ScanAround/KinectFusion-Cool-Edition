@@ -21,8 +21,15 @@ private:
     std::vector<Eigen::Vector3f> V_k1;
     std::vector<Eigen::Vector3f> N_k1;
 
+    // subsampler method
+    // array of float pointers where 0-> points to original image 1-> first subsampling etc. 
+
+    float* Depth_Pyramid[3];
+    
+    FIBITMAP SubSampler(FIBITMAP * D_k);
+
 public: 
-    Pose_Estimator(std::vector<Eigen::Vector3f> V_k, std::vector<Eigen::Vector3f> N_k);
+    Pose_Estimator(std::vector<Eigen::Vector3f>& V_k, std::vector<Eigen::Vector3f>& N_k);
     ~Pose_Estimator();
 };
 
