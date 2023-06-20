@@ -4,6 +4,9 @@
 #include "ImplicitSurface.h"
 #include "Volume.h"
 
+// TODO: choose optimal truncation value
+#define TRUNCATION 1.0
+
 int main()
 {
 	Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
@@ -18,7 +21,10 @@ int main()
 			{
 				Eigen::Vector3d p = vol.pos(x, y, z);
 				double val = implicitTorus.Eval(p);
-				vol.set(x, y, z, val);
+				if (val < TRUNCATION)
+					vol.set(x, y, z, val);
+				else
+					vol.set(x, y, z, TRUNCATION);
 			}
 		}
 	}
