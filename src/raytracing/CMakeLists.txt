@@ -15,10 +15,12 @@ set(HEADERS
 	ImplicitSurface.h
 	Ray.h
 	Raycasting.h
+	Volume.h
 )
 
 set(SOURCES
 	main.cpp
+	Volume.cpp
 )
 
 add_executable(raycasting ${HEADERS} ${SOURCES})
