@@ -3202,3 +3202,10 @@ data/rgbd_dataset_freiburg1_xyz/rgb/1305031128.747363.png
 data/dummy_shiz/level0.png
 data/dummy_shiz/level1.png
 data/dummy_shiz/level2.png
+
+.vs
+.vscode
+
+src/raytracing/Build
+
+
