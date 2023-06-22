@@ -3,6 +3,47 @@
 #include <eigen3/Eigen/Dense>
 #include <FreeImage.h>
 #include <fstream>
+#include <math.h>
+#include <array>
+#include <vector>
+
+
+inline double Frame::N_sigma(const float& sigma, const float &t){
+    return exp(-std::pow(t,2)*std::pow(sigma,-2));
+}
+
+FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, const int & filter_size){
+
+    Eigen::Matrix3f K_calibration_inverse = K_calibration.inverse();
+    FIBITMAP * result = FreeImage_Allocate(640, 480, 16);
+    //temporary !!!!! remove this 
+    BYTE * result_b = new BYTE[width*height];
+
+    for(int i = static_cast<int>(filter_size/2) ; i < height-(static_cast<int>(filter_size/2)); i++){
+        for(int j = static_cast<int>(filter_size/2); j< width-(static_cast<int>(filter_size/2)); j++){
+            float sum = 0.0f;
+            float normalizing_constant = 0.0f;
+            std::cout << Raw_k[i*width + j] << std::endl;
+            for(int q = 0; q < filter_size*filter_size; q++){
+                sum += N_sigma(sigma_s, sqrt(std::pow(j - (int) q/filter_size, 2) + std::pow(i - q % filter_size, 2))) 
+                * N_sigma(sigma_r, Raw_k[i*width + j]-Raw_k[q % filter_size * width + q / filter_size]) 
+                * Raw_k[q % filter_size * width + q / filter_size];
+                
+                std::cout << sqrt(std::pow( -(int) q/filter_size + 1, 2) + std::pow( -(q % filter_size) + 1, 2)) << std::endl;
+                
+                normalizing_constant += N_sigma(sigma_s, sqrt(std::pow(j - (int) q/filter_size, 2) + std::pow(i - q % filter_size, 2))) 
+                * N_sigma(sigma_r, Raw_k[i*width + j]-Raw_k[q % filter_size * width + q / filter_size]) ;
+            }
+            Depth_k[i*width + j] = sum * 1.0f/normalizing_constant;
+            std::cout << Depth_k[i*width + j] << std::endl;
+            result_b[i*width + j] = static_cast<uint16_t>(Depth_k[i*width + j]);
+            FreeImage_SetPixelIndex(result, j, i, result_b + (i*width + j));
+        }
+    }
+
+    return result;
+
+}
 
 void Frame::save_off_format(const std::string & where_to_save){
 
@@ -18,8 +59,14 @@ Frame::Frame(FIBITMAP & dib): dib(FreeImage_ConvertToFloat(&dib)){
     width = FreeImage_GetWidth(this->dib);
     height = FreeImage_GetHeight(this->dib);
     
-    Depth_k = new float[width*height];
-    std::memcpy(Depth_k, FreeImage_GetBits(this->dib), width*height);
+    Raw_k = new float[width*height]; // have to rescale according to the data 
+    Depth_k = new float[width*height]; // have to rescale according to the data 
+    
+    std::memcpy(Raw_k, FreeImage_GetBits(this->dib), width*height);
+    
+    //dividing by 5000 since scaled by that factor and multiply by 2^16 since stored as 16 bit monochrome images https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats
+    std::for_each(Raw_k, Raw_k + width*height, [](float x){x * 1.0f/5000.0f *256 * 256;}); 
+    
     K_calibration  <<  525.0f, 0.0f, 319.5f,
                         0.0f, 525.0f, 239.5f,
                         0.0f, 0.0f, 1.0f;
@@ -28,6 +75,7 @@ Frame::Frame(FIBITMAP & dib): dib(FreeImage_ConvertToFloat(&dib)){
 Frame::~Frame(){
     if(dib != nullptr){delete dib;}
     if(Depth_k != nullptr){delete Depth_k;}
+    if(Raw_k != nullptr){delete Raw_k;}
 }
 
 Frame::Frame(const Frame & from_other): Depth_k(from_other.Depth_k){
@@ -50,8 +98,8 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
     for(int i = 0; i < height; i++){
         for(int j = 0; j < width; j++){
             u_dot << j, i ,1;
-            //dividing by 5000 since scaled by that factor and multiply by 2^16 since stored as 16 bit monochrome images https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats
-            Eigen::Vector3f ans = (Depth_k[i*width + j] * 1.0f/5000.0f *256 * 256 )* K_calibration_inverse *  u_dot; 
+            
+            Eigen::Vector3f ans = (Depth_k[i*width + j])* K_calibration_inverse *  u_dot; 
             V_k.push_back(ans);
             // std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
         }
@@ -78,6 +126,9 @@ std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
 }
 
 void Frame::process_image(){
+    FIBITMAP * filtered_image = Apply_Bilateral(0.1, 1.0, 3);
+
+    FreeImage_Save(FREE_IMAGE_FORMAT::FIF_UNKNOWN, filtered_image,"/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/dummy_shiz/bilateral_filter.png");
     calculate_Vks();
     calculate_Nks();
 }
