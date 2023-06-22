@@ -2,6 +2,16 @@
 #include <iostream>
 #include <eigen3/Eigen/Dense>
 #include <FreeImage.h>
+#include <fstream>
+
+void Frame::save_off_format(const std::string & where_to_save){
+
+    std::ofstream OffFile(where_to_save + "/vertices.obj");
+    for(auto vertix : V_k){
+        OffFile << "v " << vertix[0] << " " << vertix[1] << " " << vertix[2] << std::endl; 
+    }
+    OffFile.close();
+}
 
 Frame::Frame(FIBITMAP & dib): dib(FreeImage_ConvertToFloat(&dib)){
     
@@ -57,7 +67,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
                Eigen::Vector3f ans =(V_k[i*width + j+1] - V_k[(i)*width + j]).cross((V_k[(i+1)*width + j] - V_k[(i)*width + j]));
                ans.normalize();
                N_k.push_back(ans);
-               std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
+            //    std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
             }
         }
     }
@@ -75,10 +85,12 @@ void Frame::process_image(){
 int main(){
     //sanity check
     FreeImage_Initialise();
-    const char * depth_map_dir = "/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
+    const char * depth_map_dir = "/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031110.534532.png";
     
     Frame * frame1 = new Frame(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir), depth_map_dir));
     
     frame1->process_image();
+
+    frame1->save_off_format("/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition");
 
 }

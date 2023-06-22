@@ -50,7 +50,7 @@ public:
 
     void process_image();
 
-    void save_off_format();
+    void save_off_format(const std::string & where_to_save);
 };
 
 #endif
