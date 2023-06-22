@@ -37,12 +37,12 @@ public:
 	// check index out of volume 
 	inline bool outOfVolume(uint _x, uint _y, uint _z)
 	{
-		if (_x < 0 || _x > dx || _y < 0 || _y > dy || _z < 0 || _z > dz)
+		if (_x < 0 || _x > dx - 1 || _y < 0 || _y > dy - 1 || _z < 0 || _z > dz - 1)
 			return true;
 		return false;
 	}
 
-	inline Eigen::Vector3f worldToGrid(const Vector3f& p)
+	inline Eigen::Vector3f worldToGrid(const Eigen::Vector3f& p)
 	{
 		Eigen::Vector3f coord(0.0, 0.0, 0.0);
 

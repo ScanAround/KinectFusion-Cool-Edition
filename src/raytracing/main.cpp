@@ -20,24 +20,14 @@ struct Vertex
 
 int main()
 {
-	// Parameters for the image plane and viewport
-	const auto aspectRatio = 1.0;
-	const unsigned int imageWidth = 50;
-	const unsigned int imageHeight = static_cast<int>(imageWidth / aspectRatio);
-	const auto viewportHeight = 2.0;
-	const auto viewportWidth = aspectRatio * viewportHeight;
+	const auto imageWidth = 400; 
+	const auto imageHeight = 400;
 
-	// Camera parameters
-	const Eigen::Vector3f cameraOrigin(0.0, 0.0, 0.0);
-	const Eigen::Vector3f focalLength(0.0, 0.0, 1.0);
-
-	// Spatial points
-	const Eigen::Vector3f horizontal(viewportWidth, 0.0, 0.0);
-	const Eigen::Vector3f vertical(0.0, viewportHeight, 0.0);
-	const Eigen::Vector3f lowerLeftCorner = cameraOrigin - horizontal / 2.0 - vertical / 2.0 - focalLength;
-
-	// Transform from TSDF space to camera space (only translation)
-	Eigen::Vector3f translation(-1.0, 0.0, -1.0);
+	Eigen::Matrix3f intrinsics; 
+	Eigen::Vector3f cameraCenter(0.0f, 0.0f, 10.0f);
+	intrinsics <<   525.0f, 0.0f, 319.5f,
+					0.0f, 525.0f, 239.5f,
+					0.0f, 0.0f, 1.0f;
 
 	// Init implicit surface
 	Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
@@ -61,31 +51,31 @@ int main()
 		}
 	}
 
+	Eigen::Vector3f rayOrigin = vol.worldToGrid(cameraCenter);
+
 	// Traverse the image pixel by pixel
 	for (unsigned int j = imageHeight - 1; j >= 0; --j)
 	{
 		for (unsigned int i = 0; i < imageWidth; ++i)
 		{
-			// Fractional steps along viewport in horizontal and vertical directions
-			const auto u = double(i) / (imageWidth - 1);
-			const auto v = double(j) / (imageHeight - 1);
+			Eigen::Vector3f rayNext(float(i), float(j), 1.0f);
+			Eigen::Vector3f rayNextCameraSpace = intrinsics * rayNext;
+			Eigen::Vector3f rayNextWorldSpace = rayNextCameraSpace + cameraCenter;
+			Eigen::Vector3f rayNextGridSpace = vol.worldToGrid(rayNextWorldSpace);
 
-			const Eigen::Vector3f rayDirection = lowerLeftCorner + u * horizontal + v * vertical - cameraOrigin;
+			Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
+			rayDir.normalize();
 
-			// Implicit cast to int, Volume::get expects Vector3i
-			// double start = vol.get(0, 0, 0);
-			double start = 1.0;
-			double step = start; 
-
+			// TODO: calculate first intersection with the volume (if exists)
+			float step = 0.0f;
+		
 			for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
 			{
-				Eigen::Vector3f p = cameraOrigin + step * rayDirection;
-				// Converting camera space to grid TSDF space
-				Eigen::Vector3f pTrans = p - translation;
+				Eigen::Vector3f p = rayOrigin + step * rayDir;
 				// Think carefully if this cast is correct or not
-				if (!vol.outOfVolume(int(pTrans[0]), int(pTrans[1]), int(pTrans[2])))
+				if (!vol.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
 				{
-					double dist = vol.get(pTrans.cast<int>());
+					double dist = vol.get(p.cast<int>());
 					if (dist < EPSILON)
 					{
 						std::cout << "INTERSECTION FOUND!" << std::endl;
