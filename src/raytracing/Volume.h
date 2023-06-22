@@ -34,6 +34,25 @@ public:
 	//! Zeros out the memory
 	void zeroOutMemory();
 
+	// check index out of volume 
+	inline bool outOfVolume(uint _x, uint _y, uint _z)
+	{
+		if (_x < 0 || _x > dx || _y < 0 || _y > dy || _z < 0 || _z > dz)
+			return true;
+		return false;
+	}
+
+	inline Eigen::Vector3f worldToGrid(const Vector3f& p)
+	{
+		Eigen::Vector3f coord(0.0, 0.0, 0.0);
+
+		coord[0] = (p[0] - min[0]) / (max[0] - min[0]) / ddx;
+		coord[1] = (p[1] - min[1]) / (max[1] - min[1]) / ddy;
+		coord[2] = (p[2] - min[2]) / (max[2] - min[2]) / ddz;
+
+		return coord;
+	}
+
 	//! Set the value at i.
 	inline void set(uint i, double val)
 	{
