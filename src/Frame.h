@@ -20,7 +20,7 @@ private:
     //Depth Map
     float * Depth_k;
     //Calibration Matrix
-    const Eigen::Matrix3f K_calibration; 
+    Eigen::Matrix3f K_calibration;
     // Vertex Map
     std::vector<Eigen::Vector3f> V_k;
     // Normal Map
@@ -30,11 +30,11 @@ private:
 
 public:
 
-    Frame(FIBITMAP & dib): dib(&dib){};
+    Frame(FIBITMAP & dib);
     
-    ~Frame(){};
+    ~Frame();
     
-    Frame(const Frame & from_other):Depth_k(from_other.Depth_k){};
+    Frame(const Frame & from_other);
     
     Frame &operator=(const Frame & Depth_k);
     
@@ -48,9 +48,9 @@ public:
 
     std::vector<Eigen::Vector3f> calculate_Nks();
 
-    std::vector<Eigen::Vector3f> calculate_Mks();
-
     void process_image();
+
+    void save_off_format();
 };
 
 #endif
