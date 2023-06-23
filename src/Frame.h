@@ -1,6 +1,5 @@
 #ifndef FRAME_H
 #define FRAME_H
-#include "Pose_Estimation.h"
 #include <iostream>
 #include <eigen3/Eigen/Dense>
 #include <FreeImage.h>
@@ -28,7 +27,7 @@ private:
     // Normal Map
     std::vector<Eigen::Vector3f> N_k;
     // Mask Map
-    std::vector<Eigen::Vector3f> M_k;
+    std::vector<int> M_k; // 1 if valid 0 if not valid
 
 public:
 
