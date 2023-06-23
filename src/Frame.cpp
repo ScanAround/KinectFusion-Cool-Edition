@@ -6,7 +6,7 @@
 #include <math.h>
 #include <array>
 #include <vector>
-
+#define MINF -std::numeric_limits<float>::infinity()
 
 inline double Frame::N_sigma(const float& sigma, const float &t){
     return exp(-std::pow(t,2)*std::pow(sigma,-2));
@@ -94,9 +94,20 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
         for(int j = 0; j < width; j++){
             u_dot << j, i ,1;
             
-            //dividing by 5000 since scaled by that factor https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats
-            Eigen::Vector3f ans = (Depth_k[i*width + j]/ 5000.0f *255.0f * 255.0f)* K_calibration_inverse *  u_dot; 
-            V_k.push_back(ans);
+            if(Depth_k[i*width + j] != MINF){
+
+                //dividing by 5000 since scaled by that factor https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats
+                Eigen::Vector3f ans = (Depth_k[i*width + j]/ 5000.0f *255.0f * 255.0f)* K_calibration_inverse *  u_dot; 
+                V_k.push_back(ans);
+                M_k.push_back(1);
+
+            }
+            else{
+
+                V_k.push_back(Eigen::Vector3f(MINF, MINF, MINF));
+                M_k.push_back(0);
+                
+            }
             // std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
         }
     }
