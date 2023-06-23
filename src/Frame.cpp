@@ -15,10 +15,11 @@ inline double Frame::N_sigma(const float& sigma, const float &t){
 FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, const int & filter_size){
 
     Eigen::Matrix3f K_calibration_inverse = K_calibration.inverse();
-    //temporary!!!!!!!
-    //remove this
-    FIBITMAP * result = FreeImage_Allocate(width, height, 8); // monochrome image therefore 8 bytes
-    BYTE * image_data = FreeImage_GetBits(result);
+    // //temporary!!!!!!!
+    // //remove this
+    FIBITMAP * result;
+    // result = FreeImage_Allocate(width, height, 8); // monochrome image therefore 8 bytes
+    // BYTE * image_data = FreeImage_GetBits(result);
 
 
     for(int i = static_cast<int>(filter_size/2) ; i < height-(static_cast<int>(filter_size/2)); ++i){
@@ -35,7 +36,7 @@ FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, 
             }
             
             Depth_k[i*width + j] = sum/normalizing_constant;
-            image_data[i*width + j] = static_cast<BYTE>(Depth_k[i*width + j]*255.0f);
+            // image_data[i*width + j] = static_cast<BYTE>(Depth_k[i*width + j]*255.0f);  // done to see filtered image
         }
     }
     return result;
@@ -45,8 +46,9 @@ FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, 
 void Frame::save_off_format(const std::string & where_to_save){
 
     std::ofstream OffFile(where_to_save + "/vertices.obj");
-    for(auto vertix : V_k){
-        OffFile << "v " << vertix[0] << " " << vertix[1] << " " << vertix[2] << std::endl; 
+    for(int i = 0; i < V_k.size();i++){
+        OffFile << "v " << V_k[i][0] << " " << V_k[i][1] << " " << V_k[i][2] << std::endl; 
+        OffFile << "vn " << N_k[i][0] << " " << N_k[i][1] << " " << N_k[i][2] << std::endl; 
     }
     OffFile.close();
 }
@@ -93,7 +95,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
             u_dot << j, i ,1;
             
             //dividing by 5000 since scaled by that factor https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats
-            Eigen::Vector3f ans = (Depth_k[i*width + j]/ 5000.0)* K_calibration_inverse *  u_dot; 
+            Eigen::Vector3f ans = (Depth_k[i*width + j]/ 5000.0f *255.0f * 255.0f)* K_calibration_inverse *  u_dot; 
             V_k.push_back(ans);
             // std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
         }
@@ -120,9 +122,9 @@ std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
 }
 
 void Frame::process_image(){
-    FIBITMAP * filtered_image = Apply_Bilateral(2.0, 1.0, 10);
+    Apply_Bilateral(0.01, 3.0, 15);
 
-    FreeImage_Save(FREE_IMAGE_FORMAT::FIF_PNG, filtered_image,"/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/dummy_shiz/bilateral_filter.png");
+    // FreeImage_Save(FREE_IMAGE_FORMAT::FIF_PNG, filtered_image,"/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/dummy_shiz/bilateral_filter.png");
     calculate_Vks();
     calculate_Nks();
 }
