@@ -17,8 +17,10 @@ private:
     int width;
     int height;
     
+    //Initial Raw Depth Map
+    float * Raw_k;
     //Depth Map
-    float * Depth_k;
+    float * Depth_k; 
     //Calibration Matrix
     Eigen::Matrix3f K_calibration;
     // Vertex Map
@@ -42,7 +44,7 @@ public:
     
     Frame &operator=(Frame&& from_other);
 
-    FIBITMAP Apply_Bilateral(const int & paramaters);
+    FIBITMAP * Apply_Bilateral(const float & sigma_r, const float & float_s, const int & filter_size);
 
     std::vector<Eigen::Vector3f> calculate_Vks();
 
@@ -51,6 +53,8 @@ public:
     void process_image();
 
     void save_off_format(const std::string & where_to_save);
+
+    inline double N_sigma(const float& sigma, const float &t);
 };
 
 #endif
