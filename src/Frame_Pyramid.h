@@ -7,12 +7,8 @@
 
 
 class Frame_Pyramid{
-private:
-    
-    std::array<Frame * , 3> Depth_Pyramid;
-
-
 public: 
+    std::array<Frame * , 3> Depth_Pyramid;
 
     Frame_Pyramid(FIBITMAP & dib);
 
@@ -25,8 +21,6 @@ public:
     Frame_Pyramid(Frame_Pyramid && from_other);
     
     Frame_Pyramid &operator=(Frame_Pyramid && from_other);
-
-    void Sub_Sampler();
 
 };
 
