@@ -1,6 +1,5 @@
 #ifndef FRAME_H
 #define FRAME_H
-#include "Pose_Estimation.h"
 #include <iostream>
 #include <eigen3/Eigen/Dense>
 #include <FreeImage.h>
@@ -12,27 +11,31 @@ class Frame{
 private:
 
     FIBITMAP * dib;
-
-    //width and height of the image
-    int width;
-    int height;
+    
     
     //Initial Raw Depth Map
     float * Raw_k;
     //Depth Map
     float * Depth_k; 
     //Calibration Matrix
-    Eigen::Matrix3f K_calibration;
     // Vertex Map
     std::vector<Eigen::Vector3f> V_k;
     // Normal Map
     std::vector<Eigen::Vector3f> N_k;
     // Mask Map
-    std::vector<Eigen::Vector3f> M_k;
+    std::vector<int> M_k; // 1 if valid 0 if not valid
 
 public:
+    Eigen::Matrix3f K_calibration;
+    
+    FIBITMAP * filtered_dib;
 
-    Frame(FIBITMAP & dib);
+    //width and height of the image
+    int width;
+    int height;
+
+
+    Frame(FIBITMAP & dib, float sub_sampling_rate = 1.0f);
     
     ~Frame();
     
@@ -50,7 +53,7 @@ public:
 
     std::vector<Eigen::Vector3f> calculate_Nks();
 
-    void process_image();
+    void process_image(float sigma_r = 0.01, float sigma_s = 3.0,  int filter_size = 15, bool apply_bilateral = true);
 
     void save_off_format(const std::string & where_to_save);
 
