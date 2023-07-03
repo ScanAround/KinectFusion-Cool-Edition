@@ -16,14 +16,15 @@ private:
     //Depth Map
     float * Depth_k; 
     //Calibration Matrix
+
+public:
     // Vertex Map
     std::vector<Eigen::Vector3f> V_k;
     // Normal Map
     std::vector<Eigen::Vector3f> N_k;
     // Mask Map
     std::vector<int> M_k; // 1 if valid 0 if not valid
-
-public:
+    
     Eigen::Matrix3f K_calibration;
     
     FIBITMAP * filtered_dib;

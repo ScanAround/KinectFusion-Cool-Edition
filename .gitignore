@@ -3209,3 +3209,8 @@ data/dummy_shiz/level2.png
 src/raytracing/Build
 
 
+src/main
+src/main
+.vscode/settings.json
+data/dummy_shiz/snapshot00.png
+.gitignore
