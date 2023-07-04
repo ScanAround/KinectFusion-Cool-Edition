@@ -23,7 +23,8 @@ public:
     // Normal Map
     std::vector<Eigen::Vector3f> N_k;
     // Mask Map
-    std::vector<int> M_k; // 1 if valid 0 if not valid
+    std::vector<int> M_k; // 1 if valid 0 if not valid 
+    // probably should make a map instead of a std::vector here
     
     Eigen::Matrix3f K_calibration;
     
