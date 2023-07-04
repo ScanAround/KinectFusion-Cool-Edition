@@ -17,7 +17,7 @@ public:
     ~ICP();
 
 
-    Eigen::Vector4f point_to_plane_solver(const Frame & source, const Frame & target, int iterations);
+    Eigen::Vector4f point_to_plane_solver(const Frame & source, const Frame & target, int iterations, bool cuda);
 
     std::unique_ptr<int> NN_finder(const Frame & source, const Frame & target);
 };
