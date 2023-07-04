@@ -49,11 +49,9 @@ FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, 
 void Frame::save_off_format(const std::string & where_to_save){
 
     std::ofstream OffFile(where_to_save);
-    for(int i = 0; i < V_k.size();i++){
-        if(M_k[i] == 1){
+    for(auto i : M_k1){
         OffFile << "v " << V_k[i][0] << " " << V_k[i][1] << " " << V_k[i][2] << std::endl; 
         OffFile << "vn " << N_k[i][0] << " " << N_k[i][1] << " " << N_k[i][2] << std::endl; 
-        }
     }
     OffFile.close();
 }
@@ -79,10 +77,11 @@ Frame::~Frame(){
 }
 
 Frame::Frame(const Frame & from_other): Depth_k(from_other.Depth_k){
-    if(!from_other.V_k.empty() and !from_other.M_k.empty() and !from_other.N_k.empty()){
+    if(!from_other.V_k.empty() && !from_other.M_k0.empty() && !from_other.M_k1.empty() && !from_other.N_k.empty()){
         V_k = from_other.V_k;
         N_k = from_other.N_k;
-        M_k = from_other.M_k;
+        M_k0 = from_other.M_k0;
+        M_k1 = from_other.M_k1;
     }
     else{
         throw std::logic_error("Either V_k vector, N_k vector, or M_k vectors are not initialized");
@@ -101,7 +100,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
             if(Depth_k[i*width + j] == MINF){
 
                 V_k.push_back(Eigen::Vector3f(MINF, MINF, MINF));
-                M_k.push_back(0);
+                M_k0.push_back(i);
 
             }
             else{
@@ -109,7 +108,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
                 //dividing by 5000 since scaled by that factor https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats
                 Eigen::Vector3f ans = (Depth_k[i*width + j]/ 5000.0f)* K_calibration_inverse *  u_dot; 
                 V_k.push_back(ans);
-                M_k.push_back(1);
+                M_k1.push_back(i);
             }
             // std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
         }
