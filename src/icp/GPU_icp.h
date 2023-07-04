@@ -10,14 +10,15 @@ private:
 
     const Frame_Pyramid F_k;
     const Frame_Pyramid F_k__1;
+    const double convergence_threshold;
 
 public:
 
-    ICP(const Frame_Pyramid& F_k, const Frame_Pyramid& F_k__1): F_k(F_k), F_k__1(F_k__1){};
+    ICP(const Frame_Pyramid& F_k, const Frame_Pyramid& F_k__1, const double convergence_threshold): F_k(F_k), F_k__1(F_k__1), convergence_threshold(convergence_threshold){};
     ~ICP();
 
 
-    Eigen::Vector4f point_to_plane_solver(const Frame & source, const Frame & target, int iterations, bool cuda, Eigen::Vector4f T_gk_1);
+    Eigen::Vector4f point_to_plane_solver(Frame & source, Frame & target, int iterations, bool cuda);
 
-    std::unique_ptr<int> NN_finder(const std::vector<Eigen::Vector3f> & source, const std::vector<Eigen::Vector3f> & target);
+    int * NN_finder(Eigen::Vector4f source_transformation, const Frame & source, const Frame & target);
 };
