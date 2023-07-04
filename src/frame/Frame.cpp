@@ -79,7 +79,7 @@ Frame::~Frame(){
 }
 
 Frame::Frame(const Frame & from_other): Depth_k(from_other.Depth_k){
-    if(!from_other.V_k.empty() and !from_other.M_k.empty() and !from_other.N_k.empty()){
+    if(!from_other.V_k.empty() && !from_other.M_k.empty() && !from_other.N_k.empty()){
         V_k = from_other.V_k;
         N_k = from_other.N_k;
         M_k = from_other.M_k;

@@ -18,6 +18,8 @@ private:
     //Calibration Matrix
 
 public:
+    Eigen::Vector4f T_gk; // transformation matrix to global coordinates of the current frame
+    
     // Vertex Map
     std::vector<Eigen::Vector3f> V_k;
     // Normal Map
