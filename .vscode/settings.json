@@ -72,5 +72,6 @@
         "mutex": "cpp",
         "__nullptr": "cpp",
         "__string": "cpp"
-    }
+    },
+    "C_Cpp.intelliSenseEngineFallback": "enabled"
 }
