@@ -7,7 +7,7 @@
 // TODO: choose optimal truncation value
 #define TRUNCATION 1.0
 #define MAX_MARCHING_STEPS 10
-#define EPSILON 0.05
+#define EPSILON 0.1
 
 
 struct Vertex
