@@ -32,8 +32,8 @@ void writePointCloud(const std::string& filename, const std::vector<Vertex>& _ve
 
 int main()
 {
-	const auto imageWidth = 400; 
-	const auto imageHeight = 400;
+	const auto imageWidth = 640; 
+	const auto imageHeight = 480;
 
 	Eigen::Matrix3f intrinsics; 
 	Eigen::Vector3f cameraCenter(0.5f, 0.5f, -0.1f);
