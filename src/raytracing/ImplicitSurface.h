@@ -25,3 +25,26 @@ private:
 };
 
 #endif // !IMPLICIT_SURFACE_H
+
+
+class Sphere
+{
+public:
+	Sphere(const Eigen::Vector3d& center, double radius) : m_center(center), m_radius(radius)
+	{
+	}
+
+	double Eval(const Eigen::Vector3d& _x)
+	{
+		// TODO: implement the implicit sphere formula using the member variables m_center and m_radius
+		Eigen::Vector3d diff;
+		// Easier to further compute (x - x_0)^2 + (y - y_0)^2 + (z - z_0)^2
+		diff = _x - m_center;
+
+		return diff.squaredNorm() - m_radius * m_radius;
+	}
+
+private:
+	Eigen::Vector3d m_center;
+	double m_radius;
+};
