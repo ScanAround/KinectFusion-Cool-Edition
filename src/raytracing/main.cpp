@@ -43,7 +43,7 @@ int main()
 
 	// Init implicit surface
 	// Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
-	Sphere implicit = Sphere(Eigen::Vector3d(25, 25, 25), 10);
+	Sphere implicit = Sphere(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4);
 	// Fill spatial grid with distance to the implicit surface
 	unsigned int mc_res = 50;
 	Volume vol(Eigen::Vector3d(-0.1, -0.1, -0.1), Eigen::Vector3d(1.1, 1.1, 1.1), mc_res, mc_res, mc_res, 1);
@@ -98,7 +98,7 @@ int main()
 						prevDist = dist;
 						continue;
 					}
-					if (prevDist > 0 && dist <=0)
+					if (dist <=0)
 					{	
 						Vertex v = {
 							p  // position
