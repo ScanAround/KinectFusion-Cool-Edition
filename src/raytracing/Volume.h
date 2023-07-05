@@ -3,6 +3,10 @@
 #ifndef VOLUME_H
 #define VOLUME_H
 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cstdlib>
 #include <limits>
 #include <Eigen/Dense>
 typedef unsigned int uint;
@@ -146,6 +150,33 @@ public:
 	inline uint getPosFromTuple(int x, int y, int z) const
 	{
 		return x*dy*dz + y*dz + z;
+	}
+
+	void writePointCloud(const std::string& filename)
+	{
+		std::ofstream file(filename);
+		file << "OFF" << std::endl;
+		std::vector<std::vector<unsigned int>> vertices;
+		for (unsigned int x = 0; x < getDimX(); x++)
+		{
+			for (unsigned int y = 0; y < getDimY(); y++)
+			{
+				for (unsigned int z = 0; z < getDimZ(); z++)
+				{
+					if (abs(get(x, y, z)) <= 0.05)
+					{	
+						std::vector<unsigned int> v = {x, y, z};
+						vertices.push_back(v);
+					}	
+				}
+			}
+		}
+		file << vertices.size() << " 0 0" << std::endl;
+		for (auto& elem: vertices)
+		{
+			file << elem[0] << " " << elem[1] << " " << elem[2] << std::endl;
+		}
+
 	}
 
 

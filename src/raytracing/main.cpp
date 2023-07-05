@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <vector>
 #include <Eigen/Dense>
 #include "ImplicitSurface.h"
 #include "Volume.h"
@@ -14,9 +14,21 @@ struct Vertex
 {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-		// position stored as 4 floats (4th component is supposed to be 1.0)
-		Eigen::Vector4f position;
+	// position stored as 4 floats (4th component is supposed to be 1.0) -> why?
+	Eigen::Vector3f position;
 };
+
+void writePointCloud(const std::string& filename, const std::vector<Vertex>& _vertices)
+{
+	std::ofstream file(filename);
+	file << "OFF" << std::endl;
+	file << _vertices.size() << " 0 0" << std::endl;
+	for (unsigned int i = 0; i < _vertices.size(); ++i)
+	{
+		file << _vertices[i].position[0] << " " << _vertices[i].position[1] << " " << _vertices[i].position[2] << std::endl;
+	}
+
+}
 
 int main()
 {
@@ -51,6 +63,10 @@ int main()
 		}
 	}
 
+	// Test function to check the point cloud writer
+	// vol.writePointCloud("pointcloud.off");
+
+	std::vector<Vertex> vertices;
 	Eigen::Vector3f rayOrigin = vol.worldToGrid(cameraCenter);
 
 	// Traverse the image pixel by pixel
@@ -78,12 +94,15 @@ int main()
 				{
 					double dist = vol.get(p.cast<int>());
 					if (dist < EPSILON)
-					{
-						std::cout << "INTERSECTION FOUND!" << std::endl;
+					{	
+						Vertex v = {
+							p  // position
+						};
+						vertices.push_back(v);
 						break;
 					}
 					step += 1;
-					std::cout << dist << std::endl;
+					// std::cout << dist << std::endl;
 				}
 				else
 				{
@@ -94,6 +113,8 @@ int main()
 			}
 		}
 	}
+
+	writePointCloud("pointcloud.off", vertices);
 
 	return 0;
 }
