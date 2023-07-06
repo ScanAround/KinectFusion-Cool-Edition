@@ -6,7 +6,7 @@
 
 // TODO: choose optimal truncation value
 #define TRUNCATION 1.0
-#define MAX_MARCHING_STEPS 200
+#define MAX_MARCHING_STEPS 500
 #define EPSILON 0.1
 
 
@@ -45,7 +45,7 @@ int main()
 	// Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
 	Sphere implicit = Sphere(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4);
 	// Fill spatial grid with distance to the implicit surface
-	unsigned int mc_res = 200;
+	unsigned int mc_res = 600;
 	Volume vol(Eigen::Vector3d(-0.1, -0.1, -0.1), Eigen::Vector3d(1.1, 1.1, 1.1), mc_res, mc_res, mc_res, 1);
 	for (unsigned int x = 0; x < vol.getDimX(); x++)
 	{
