@@ -86,37 +86,42 @@ int main()
 			// First, let's try step size equal to one single voxel
 			unsigned int step = 1;
 			double prevDist = 0;
-			for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
+			if (i % 20 == 0 && j % 10 == 0)
 			{
-				Eigen::Vector3f p = rayOrigin + step * rayDir;
-				// Think carefully if this cast is correct or not
-				if (!vol.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
+				for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
 				{
-					double dist = vol.get(p.cast<int>());
-					if (s == 0)
+					Eigen::Vector3f p = rayOrigin + step * rayDir;
+					/*
+					// Think carefully if this cast is correct or not
+					if (!vol.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
 					{
+						double dist = vol.get(p.cast<int>());
+						if (dist <=0 && s > 0)
+						{	
+							Vertex v = {
+								p  // position
+							};
+							vertices.push_back(v);
+							break;
+						}
 						prevDist = dist;
-						continue;
+						step += 1;
+						// std::cout << dist << std::endl;
 					}
-					if (dist <=0)
-					{	
-						Vertex v = {
+					else
+					{
+						std::cout << "OUT OF VOLUME" << std::endl;
+						break;
+					} */
+
+					// Print rays
+					Vertex v = {
 							p  // position
 						};
-						vertices.push_back(v);
-						break;
-					}
-					prevDist = dist;
-					step += 1;
-					// std::cout << dist << std::endl;
+					vertices.push_back(v);
+					step += 1;				
 				}
-				else
-				{
-					std::cout << "OUT OF VOLUME" << std::endl;
-					break;
-				}
-					
-			}
+			}	
 		}
 	}
 
