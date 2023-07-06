@@ -1,5 +1,8 @@
+#define _USE_MATH_DEFINES  // to access M_PI macro from math.h
+
 #include <iostream>
 #include <vector>
+#include <math.h>
 #include <Eigen/Dense>
 #include "ImplicitSurface.h"
 #include "Volume.h"
@@ -36,10 +39,31 @@ int main()
 	const auto imageHeight = 480;
 
 	Eigen::Matrix3f intrinsics; 
-	Eigen::Vector3f cameraCenter(0.5f, 0.5f, -0.1f);
 	intrinsics <<   525.0f, 0.0f, 319.5f,
 					0.0f, 525.0f, 239.5f,
 					0.0f, 0.0f, 1.0f;
+
+	Eigen::Vector3f cameraCenter(0.5f, 0.5f, -0.1f);
+
+	// Define rotation with Euler angles
+	float alpha = 30 * (M_PI / 180);  // x
+	float beta = 30 * (M_PI / 180);   // y
+	float gamma = 30 * (M_PI / 180);  // z
+	Eigen::Matrix3f rotationX;
+	Eigen::Matrix3f rotationY;
+	Eigen::Matrix3f rotationZ;
+
+	rotationX << 1.0f, 0.0f, 0.0f, 
+				 0.0f, cos(alpha), -sin(alpha), 
+				 0.0f, sin(alpha), cos(alpha);
+	rotationY << cos(beta), 0.0f, sin(beta),
+				 0.0f, 1.0f, 0.0f, 
+				 -sin(beta), 0.0f, cos(beta);
+	rotationZ << cos(gamma), -sin(gamma), 0.0f,
+				 sin(gamma), cos(gamma), 0.0f,
+				 0.0f, 0.0f, 1.0f;
+
+	Eigen::Matrix3f rotation = rotationZ * rotationY * rotationX;
 
 	// Init implicit surface
 	// Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
@@ -76,7 +100,7 @@ int main()
 		{
 			Eigen::Vector3f rayNext(float(i), float(j), 1.0f);
 			Eigen::Vector3f rayNextCameraSpace = intrinsics.inverse() * rayNext;
-			Eigen::Vector3f rayNextWorldSpace = rayNextCameraSpace + cameraCenter;
+			Eigen::Vector3f rayNextWorldSpace = rotation * rayNextCameraSpace + cameraCenter;
 			Eigen::Vector3f rayNextGridSpace = vol.worldToGrid(rayNextWorldSpace);
 
 			Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
