@@ -6,7 +6,7 @@
 
 // TODO: choose optimal truncation value
 #define TRUNCATION 1.0
-#define MAX_MARCHING_STEPS 500
+#define MAX_MARCHING_STEPS 200
 #define EPSILON 0.1
 
 
@@ -45,7 +45,7 @@ int main()
 	// Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
 	Sphere implicit = Sphere(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4);
 	// Fill spatial grid with distance to the implicit surface
-	unsigned int mc_res = 50;
+	unsigned int mc_res = 200;
 	Volume vol(Eigen::Vector3d(-0.1, -0.1, -0.1), Eigen::Vector3d(1.1, 1.1, 1.1), mc_res, mc_res, mc_res, 1);
 	for (unsigned int x = 0; x < vol.getDimX(); x++)
 	{
@@ -84,7 +84,7 @@ int main()
 
 			// TODO: calculate first intersection with the volume (if exists)
 			// First, let's try step size equal to one single voxel
-			unsigned int step = 1;
+			float step = 1.0f;
 			double prevDist = 0;
 			// if (i % 20 == 0 && j % 10 == 0)
 			// {
@@ -105,7 +105,7 @@ int main()
 						break;
 					}
 					prevDist = dist;
-					step += 0.1;
+					step += 1.0f;
 					// std::cout << dist << std::endl;
 				}
 				else
