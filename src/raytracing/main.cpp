@@ -9,7 +9,7 @@
 
 // TODO: choose optimal truncation value
 #define TRUNCATION 1.0
-#define MAX_MARCHING_STEPS 5
+#define MAX_MARCHING_STEPS 10000
 #define EPSILON 0.1
 
 
@@ -67,16 +67,16 @@ int main()
 
 	std::vector<Vertex> vertices;
 
-	Vertex c = {
+	/* Vertex c = {
 		cameraCenter
 	};
-	vertices.push_back(c);
+	vertices.push_back(c); */
 
 	// Init implicit surface
 	// Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
 	Sphere implicit = Sphere(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4);
 	// Fill spatial grid with distance to the implicit surface
-	unsigned int mc_res = 300;
+	unsigned int mc_res = 600;
 	Volume vol(Eigen::Vector3d(-0.1, -0.1, -0.1), Eigen::Vector3d(1.1, 1.1, 1.1), mc_res, mc_res, mc_res, 1);
 	for (unsigned int x = 0; x < vol.getDimX(); x++)
 	{
@@ -92,13 +92,13 @@ int main()
 				else
 					vol.set(x, y, z, TRUNCATION);
 
-				if ( x % 10 == 0 && y % 10 == 0 && z % 10 == 0)
+				/* if ( x % 10 == 0 && y % 10 == 0 && z % 10 == 0)
 				{
 					Vertex v = {
 							p.cast<float>()  // position
 						};
 					vertices.push_back(v);
-				}
+				} */
 					
 			}
 		}
@@ -119,8 +119,8 @@ int main()
 			Eigen::Vector3f rayNextWorldSpace = rotation * rayNextCameraSpace + cameraCenter;
 			Eigen::Vector3f rayNextGridSpace = vol.worldToGrid(rayNextWorldSpace);
 
-			//Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
-			Eigen::Vector3f rayDir = rayNextWorldSpace - cameraCenter;
+			Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
+			//Eigen::Vector3f rayDir = rayNextWorldSpace - cameraCenter;
 			rayDir.normalize();
 
 			// TODO: calculate first intersection with the volume (if exists)
@@ -128,45 +128,45 @@ int main()
 			float step = 1.0f;
 			double prevDist = 0;
 			bool intersected = false;
-			if (j % 10 == 0 && i % 10 == 0)
+			/* if (j % 10 == 0 && i % 10 == 0)
+			{ */
+			for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
 			{
-				for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
+				Eigen::Vector3f p = rayOrigin + step * rayDir;
+				/* Vertex v = {
+							p  // position
+						};
+				vertices.push_back(v);
+				step += .5f; */
+				
+				// Think carefully if this cast is correct or not
+				if (!vol.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
 				{
-					Eigen::Vector3f p = cameraCenter + step * rayDir;
-					Vertex v = {
-								p  // position
-							};
-					vertices.push_back(v);
-					step += .5f;
-					
-					/* // Think carefully if this cast is correct or not
-					if (!vol.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
-					{
-						intersected = true;
-						double dist = vol.get(p.cast<int>());
-						if (prevDist > 0 && dist <=0 && s > 0)
-						{	
-							Vertex v = {
-								p  // position
-							};
-							vertices.push_back(v);
-							break;
-						}
-						prevDist = dist;
-						step += 1.0f;
-						// std::cout << dist << std::endl;
-					}
-					else
+					intersected = true;
+					double dist = vol.get(p.cast<int>());
+					if (prevDist > 0 && dist <=0 && s > 0)
 					{	
-						// If the ray has already intersected the volume and it is going out of boundaries
-						if (intersected)
-							break;
-						// If not, conitnue traversing until finding intersection
-						step += 1.0f;
-						continue;
-					}	 */								
-				}	
-			}
+						Vertex v = {
+							p  // position
+						};
+						vertices.push_back(v);
+						break;
+					}
+					prevDist = dist;
+					step += 1.0f;
+					// std::cout << dist << std::endl;
+				}
+				else
+				{	
+					// If the ray has already intersected the volume and it is going out of boundaries
+					if (intersected)
+						break;
+					// If not, conitnue traversing until finding intersection
+					step += 1.0f;
+					continue;
+				}						
+			}	
+			//}
 			
 		}
 	}
