@@ -71,6 +71,8 @@
         "iomanip": "cpp",
         "mutex": "cpp",
         "__nullptr": "cpp",
-        "__string": "cpp"
-    }
+        "__string": "cpp",
+        "xstring": "cpp"
+    },
+    "C_Cpp.intelliSenseEngineFallback": "enabled"
 }
