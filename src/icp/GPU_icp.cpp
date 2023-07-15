@@ -1,11 +1,19 @@
 #include "GPU_icp.h"
 
-int * ICP::NN_finder(Eigen::Vector4f source_transformation, const Frame & source, const Frame & target){
-    //will return the nearest neighbour index for each source vector i.e.
+void ICP::NN_finder(Eigen::Matrix4f source_transformation, Frame & source, const Frame & target, std::vector<Match>& matches){
+    // will return the nearest neighbour index for each source vector i.e.
+    // we don't take normals into consideration
     // 0 1 2 3 4 5 source vector indices
     // 5 2 3 1 4 4 target vector nearest neighbor to source indices
+    // w w w w w w weights of nearest neighbor to source indices
     
+    std::vector<Eigen::Vector3f> V_tk; //transformed V
+
+    source.apply_transform(source_transformation, V_tk); //transforming V_k -> V_tk according to source_transformation
+
+    my_NN->buildIndex(target.V_gk); //initializing index for V_gk
     
+    matches = my_NN->queryMatches(V_tk);
 };
 
 Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int iterations, bool cuda){
@@ -31,9 +39,11 @@ Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
         //for loop since first without parallelization
         for(int i = 0; i < iterations || (T_gk - T_gk_z).norm() > this->convergence_threshold; i++){
             
-            target.apply_transform();
+            target.apply_G_transform();
 
-            int * NN_arr = this->NN_finder(T_gk, source, target);
+            std::vector<Match> NN_arr;
+
+            this->NN_finder(T_gk, source, target, NN_arr);
             
             for(auto i: source.M_k1){
                 //get each point's row in the A matrix     
@@ -42,22 +52,23 @@ Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
                 Eigen::Vector3f V_gk_source = T_gk.block(0,0,3,3) * source.V_k[i] + T_gk.col(3).head(3);
                 
                 // this is innefficient since T_gk_1 and V_k are already known and constant 
-                A(i, 0) = target.N_gk[NN_arr[i]][2] * V_gk_source[1] - target.N_gk[NN_arr[i]][1] * V_gk_source[2];
-                A(i, 1) = target.N_gk[NN_arr[i]][0] * V_gk_source[2] - target.N_gk[NN_arr[i]][2] * V_gk_source[0];
-                A(i, 2) = target.N_gk[NN_arr[i]][1] * V_gk_source[0] - target.N_gk[NN_arr[i]][0] * V_gk_source[1];
-                A(i, 3) = target.N_gk[NN_arr[i]][0];
-                A(i, 4) = target.N_gk[NN_arr[i]][1];
-                A(i, 5) = target.N_gk[NN_arr[i]][2];
+                A(i, 0) = target.N_gk[NN_arr[i].idx][2] * V_gk_source[1] - target.N_gk[NN_arr[i].idx][1] * V_gk_source[2];
+                A(i, 1) = target.N_gk[NN_arr[i].idx][0] * V_gk_source[2] - target.N_gk[NN_arr[i].idx][2] * V_gk_source[0];
+                A(i, 2) = target.N_gk[NN_arr[i].idx][1] * V_gk_source[0] - target.N_gk[NN_arr[i].idx][0] * V_gk_source[1];
+                A(i, 3) = target.N_gk[NN_arr[i].idx][0];
+                A(i, 4) = target.N_gk[NN_arr[i].idx][1];
+                A(i, 5) = target.N_gk[NN_arr[i].idx][2];
 
                 b(i) = 
-                  target.N_gk[NN_arr[i]][0] * target.V_gk[NN_arr[i]][0] 
-                + target.N_gk[NN_arr[i]][1] * target.V_gk[NN_arr[i]][1] 
-                + target.N_gk[NN_arr[i]][2] * target.V_gk[NN_arr[i]][2] 
-                - target.N_gk[NN_arr[i]][0] * target.V_gk[NN_arr[i]][0]
-                - target.N_gk[NN_arr[i]][1] * target.V_gk[NN_arr[i]][1]
-                - target.N_gk[NN_arr[i]][2] * target.V_gk[NN_arr[i]][2];
+                  target.N_gk[NN_arr[i].idx][0] * target.V_gk[NN_arr[i].idx][0] 
+                + target.N_gk[NN_arr[i].idx][1] * target.V_gk[NN_arr[i].idx][1] 
+                + target.N_gk[NN_arr[i].idx][2] * target.V_gk[NN_arr[i].idx][2] 
+                - target.N_gk[NN_arr[i].idx][0] * target.V_gk[NN_arr[i].idx][0]
+                - target.N_gk[NN_arr[i].idx][1] * target.V_gk[NN_arr[i].idx][1]
+                - target.N_gk[NN_arr[i].idx][2] * target.V_gk[NN_arr[i].idx][2];
             }
             target_transform_calculated = true;
+            //could be more efficient maybe because ATA is a symmetric matrix
             Eigen::Matrix<float,-1 , -1, Eigen::RowMajor> U = (A.transpose() * A).ldlt().matrixU(); //Upper Triangle of A -> row major according to documentation performance
             Eigen::Vector<float, 6> y = U.triangularView<Eigen::Upper>().solve(A.transpose() * b);
             Eigen::Vector<float, 6> x = U.triangularView<Eigen::Upper>().solve(y);
@@ -69,7 +80,6 @@ Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
             
             T_gk = T_gk_z * T_gk;
             
-            delete[] NN_arr;
         }
         return T_gk;
     }
@@ -83,5 +93,5 @@ Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
     }
 
 int main(){
-
+    
 }
