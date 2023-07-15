@@ -4,7 +4,7 @@ int * ICP::NN_finder(Eigen::Vector4f source_transformation, const Frame & source
     //will return the nearest neighbour index for each source vector i.e.
     // 0 1 2 3 4 5 source vector indices
     // 5 2 3 1 4 4 target vector nearest neighbor to source indices
-
+    
     
 };
 
@@ -81,3 +81,7 @@ Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
             Eigen::Vector<float, 6> x = U.triangularView<Eigen::Upper>().solve(y);
     }
     }
+
+int main(){
+
+}
