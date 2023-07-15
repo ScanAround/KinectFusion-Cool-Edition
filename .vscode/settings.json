@@ -72,7 +72,9 @@
         "mutex": "cpp",
         "__nullptr": "cpp",
         "__string": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "variant": "cpp",
+        "typeindex": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "enabled"
 }
