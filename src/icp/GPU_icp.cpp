@@ -7,7 +7,7 @@ int * ICP::NN_finder(Eigen::Vector4f source_transformation, const Frame & source
 
     
 };
-
+nn_searcher=NearestNeighborSearchFlann()
 Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int iterations, bool cuda){
     
     // source is the live frame F_k and the target is the ray-casted previous frame F_k-1
@@ -25,15 +25,17 @@ Eigen::Vector4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
     Eigen::Matrix4f T_gk_z;
 
     std::vector<Eigen::Vector3f> source_vectors = source.V_k; 
-    std::vector<Eigen::Vector3f> source_vectors = source.V_k; 
+    std::vector<Eigen::Vector3f> target_vectors = target.V_k; 
+    nn_searcher = make_unique<NearestNeighborSearchFlann>();
+    nn_searcher->buildIndex(target_vectors);
 
     if(!cuda){
         //for loop since first without parallelization
         for(int i = 0; i < iterations || (T_gk - T_gk_z).norm() > this->convergence_threshold; i++){
             
             target.apply_transform();
-
-            int * NN_arr = this->NN_finder(T_gk, source, target);
+            source.apply_transform();
+            int * NN_arr = nn_searcher->queryMatches( source.V_k);
             
             for(auto i: source.M_k1){
                 //get each point's row in the A matrix     
