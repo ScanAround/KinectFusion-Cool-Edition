@@ -7,16 +7,6 @@
 
 class Frame{
 
-private:
-
-    FIBITMAP * dib;
-    
-    
-    //Initial Raw Depth Map
-    float * Raw_k;
-    //Depth Map
-    float * Depth_k; 
-    //Calibration Matrix
 
 public:
 
@@ -85,6 +75,16 @@ public:
     int width;
     int height;
 
+private:
+
+    FIBITMAP * dib;
+    
+    
+    //Initial Raw Depth Map
+    float * Raw_k;
+    //Depth Map
+    float * Depth_k; 
+    //Calibration Matrix
 
 };
 
