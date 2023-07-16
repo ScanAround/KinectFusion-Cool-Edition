@@ -2,8 +2,8 @@
 
 #include <eigen3/Eigen/Dense>
 #include "../frame/Frame_Pyramid.h"
-#include "NearestNeighbours.h"
-
+#include "NN.h"
+#include <FreeImage.h>
 
 class ICP{
 
@@ -16,7 +16,7 @@ public:
     
     ~ICP();
 
-    Eigen::Vector4f point_to_plane_solver(Frame & source, Frame & target, int iterations, bool cuda);
+    Eigen::Matrix4f point_to_plane_solver(Frame & source, Frame & target, int iterations, bool cuda);
 
     void NN_finder(Eigen::Matrix4f source_transformation, Frame & source, const Frame & target, std::vector<Match>& matches);
 
