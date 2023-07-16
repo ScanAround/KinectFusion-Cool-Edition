@@ -68,6 +68,8 @@ Frame::Frame(FIBITMAP & dib, float sub_sampling_rate): dib(FreeImage_ConvertToFl
     K_calibration  <<  525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
                         0.0f, 525.0f / sub_sampling_rate, 239.5f/ sub_sampling_rate,
                         0.0f, 0.0f, 1.0f;
+
+    T_gk = Eigen::Matrix4f::Identity();
 }
 
 Frame::~Frame(){
@@ -97,10 +99,10 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
     for(int i = 0; i < height; i++){
         for(int j = 0; j < width; j++){
             u_dot << j, i ,1;
-            if(Depth_k[i*width + j] == MINF){
+            if(Depth_k[i*width + j] == MINF || Depth_k[i*width + j] <= 0.0f){
 
                 V_k.push_back(Eigen::Vector3f(MINF, MINF, MINF));
-                M_k0.push_back(i);
+                M_k0.push_back(i*width+j);
 
             }
             else{
@@ -108,7 +110,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
                 //dividing by 5000 since scaled by that factor https://cvg.cit.tum.de/data/datasets/rgbd-dataset/file_formats
                 Eigen::Vector3f ans = (Depth_k[i*width + j]/ 5000.0f)* K_calibration_inverse *  u_dot; 
                 V_k.push_back(ans);
-                M_k1.push_back(i);
+                M_k1.push_back(i*width+j);
             }
             // std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
         }
@@ -124,7 +126,6 @@ std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
                Eigen::Vector3f ans =(V_k[i*width + j+1] - V_k[(i)*width + j]).cross((V_k[(i+1)*width + j] - V_k[(i)*width + j]));
                ans.normalize();
                N_k.push_back(ans);
-            //    std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
             }
         }
     }

@@ -21,7 +21,6 @@ Frame_Pyramid::Frame_Pyramid(FIBITMAP & dib){
                                                     Depth_Pyramid[1] -> height/2,
                                                     FILTER_BOX), 4.0f);
     Depth_Pyramid[2] -> process_image(0.01, 1.0, 5);
-
 }
 
 Frame_Pyramid::~Frame_Pyramid(){
