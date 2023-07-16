@@ -7,16 +7,6 @@
 
 class Frame{
 
-private:
-
-    FIBITMAP * dib;
-    
-    
-    //Initial Raw Depth Map
-    float * Raw_k;
-    //Depth Map
-    float * Depth_k; 
-    //Calibration Matrix
 
 public:
 
@@ -42,7 +32,7 @@ public:
 
     void save_off_format(const std::string & where_to_save);
 
-    void apply_transform(){
+    void apply_G_transform(){
         if(!transformed){
             for(auto idx:M_k1){
                 V_gk.push_back(T_gk.block(0,0,3,3) * V_k[idx] + T_gk.col(3).head(3)); 
@@ -52,10 +42,16 @@ public:
         transformed = true;
     };
 
+   void apply_transform(Eigen::Matrix4f T, std::vector<Eigen::Vector3f>& V_tk){
+        for(auto idx:M_k1){
+            V_tk.push_back(T.block(0,0,3,3) * V_k[idx] + T.col(3).head(3)); 
+        }
+    };
+
     inline double N_sigma(const float& sigma, const float &t);
 
     // transformation matrix to global coordinates of the current frame
-    Eigen::Vector4f T_gk; 
+    Eigen::Matrix4f T_gk; 
     
     // Vertex Map
     std::vector<Eigen::Vector3f> V_k;
@@ -85,6 +81,15 @@ public:
     int width;
     int height;
 
+private:
+
+    FIBITMAP * dib;
+    
+    //Initial Raw Depth Map
+    float * Raw_k;
+    //Depth Map
+    float * Depth_k; 
+    //Calibration Matrix
 
 };
 
