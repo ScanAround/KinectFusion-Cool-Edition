@@ -41,7 +41,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
 
     if(!cuda){
         //for loop since first without parallelization
-        for(int i = 0; i < iterations || (T_gk - T_gk_z).norm() > this->convergence_threshold; i++){
+        for(int i = 0; i < nPoints; i++){
             
             target.apply_G_transform();
 
@@ -97,10 +97,6 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & source, Frame & target, int i
 
     else{
         //parallelization part
-
-            Eigen::Matrix<float,-1 , -1, Eigen::RowMajor> U = (A.transpose() * A).ldlt().matrixU(); //Upper Triangle of A -> row major according to documentation performance
-            Eigen::Vector<float, 6> y = U.triangularView<Eigen::Upper>().solve(A.transpose() * b);
-            Eigen::Vector<float, 6> x = U.triangularView<Eigen::Upper>().solve(y);
     }
     
     return T_gk;
