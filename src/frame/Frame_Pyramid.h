@@ -22,6 +22,7 @@ public:
     
     Frame_Pyramid &operator=(Frame_Pyramid && from_other);
 
+    Eigen::Matrix4f T_gk;
 };
 
 #endif

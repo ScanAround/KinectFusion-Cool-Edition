@@ -61,7 +61,7 @@ void Frame::save_off_format(const std::string & where_to_save){
     OffFile.close();
 }
 
-Frame::Frame(FIBITMAP & dib, float sub_sampling_rate): dib(FreeImage_ConvertToFloat(&dib)){
+Frame::Frame(FIBITMAP & dib, float sub_sampling_rate, Eigen::Matrix4f T_gk): dib(FreeImage_ConvertToFloat(&dib)){
     
     width = FreeImage_GetWidth(this->dib);
     height = FreeImage_GetHeight(this->dib);
@@ -74,7 +74,7 @@ Frame::Frame(FIBITMAP & dib, float sub_sampling_rate): dib(FreeImage_ConvertToFl
                         0.0f, 525.0f / sub_sampling_rate, 239.5f/ sub_sampling_rate,
                         0.0f, 0.0f, 1.0f;
 
-    T_gk = Eigen::Matrix4f::Identity();
+    this -> T_gk = T_gk;
 }
 
 Frame::~Frame(){
@@ -126,7 +126,6 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
 
 std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
     if(!V_k.empty()){
-        //massive mistake here!!
         for(int i = 0; i < height - 1; i++){
             for(int j = 0; j < width - 1; j++){
                 Eigen::Vector3f ans =(V_k[i*width + j+1] - V_k[(i)*width + j]).cross((V_k[(i+1)*width + j] - V_k[(i)*width + j]));

@@ -10,7 +10,7 @@ class Frame{
 
 public:
 
-    Frame(FIBITMAP & dib, float sub_sampling_rate = 1.0f);
+    Frame(FIBITMAP & dib, float sub_sampling_rate = 1.0f, Eigen::Matrix4f T_gk);
     
     ~Frame();
     
@@ -42,8 +42,16 @@ public:
         Eigen::Vector3f u_dot = (K_calibration * vec_camera_frame) / vec_camera_frame[2];
 
         Eigen::Vector2i u;
-        u << int(u_dot[0]), int(u_dot[1]);
-        
+        if(u_dot[0] >= 0 
+        && u_dot[0] <= this -> width 
+        && u_dot[1] >= 0 
+        && u_dot[1] <= this -> height){
+            // making sure u is within the image we have 
+            u << int(u_dot[0]), int(u_dot[1]);
+        }
+        else{
+            u << 0,0 ;
+        }
         return u;
     };
 
@@ -51,10 +59,17 @@ public:
         if(!transformed){
             for(int idx = 0 ; idx < V_k.size(); idx++){
                 V_gk.push_back(T_gk.block(0,0,3,3) * V_k[idx] + T_gk.block(0,3,3,1)); 
-                N_gk.push_back(T_gk.block(0,0,3,3) * N_k[idx] + T_gk.block(0,3,3,1)); 
+                N_gk.push_back(T_gk.block(0,0,3,3) * N_k[idx]); 
             }
         }
         transformed = true;
+    };
+
+    void apply_transform(Eigen::Matrix4f T, std::vector<Eigen::Vector3f>& V_tk, std::vector<Eigen::Vector3f>& N_tk){
+        for(int idx = 0 ; idx < V_k.size(); idx++){
+            V_tk.push_back(T.block(0,0,3,3) * V_k[idx] + T.block(0,3,3,1)); 
+            N_tk.push_back(T.block(0,0,3,3) * N_k[idx]);
+        }
     };
 
     void apply_transform(Eigen::Matrix4f T, std::vector<Eigen::Vector3f>& V_tk){
