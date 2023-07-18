@@ -61,7 +61,7 @@ void Frame::save_off_format(const std::string & where_to_save){
     OffFile.close();
 }
 
-Frame::Frame(FIBITMAP & dib, float sub_sampling_rate, Eigen::Matrix4f T_gk): dib(FreeImage_ConvertToFloat(&dib)){
+Frame::Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate): dib(FreeImage_ConvertToFloat(&dib)){
     
     width = FreeImage_GetWidth(this->dib);
     height = FreeImage_GetHeight(this->dib);

@@ -10,7 +10,7 @@ class Frame{
 
 public:
 
-    Frame(FIBITMAP & dib, float sub_sampling_rate = 1.0f, Eigen::Matrix4f T_gk);
+    Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
     
     ~Frame();
     
@@ -72,7 +72,7 @@ public:
         }
     };
 
-    void apply_transform(Eigen::Matrix4f T, std::vector<Eigen::Vector3f>& V_tk){
+    void apply_transform(Eigen::Matrix4f& T, std::vector<Eigen::Vector3f>& V_tk){
         for(int idx = 0 ; idx < V_k.size(); idx++){
             V_tk.push_back(T.block(0,0,3,3) * V_k[idx] + T.block(0,3,3,1)); 
         }
