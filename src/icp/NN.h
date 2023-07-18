@@ -3,11 +3,6 @@
 #include <eigen3/Eigen/Dense>
 
 
-struct Match {
-	int idx;
-	float weight;
-};
-
 //adapted from exercise 5
 class NN_flann{
 public:
@@ -46,7 +41,7 @@ public:
 		std::cout << "FLANN index created." << std::endl;
 	}
 
-	std::vector<Match> queryMatches(const std::vector<Eigen::Vector3f>& transformedPoints) {
+	std::vector<std::pair<int, int>>  queryMatches(const std::vector<Eigen::Vector3f>& transformedPoints) {
         if (!m_index) {
 			std::cout << "FLANN index needs to be build before querying any matches." << std::endl;
 			return {};
@@ -71,14 +66,13 @@ public:
 
 		// Filter the matches.
 		const unsigned nMatches = transformedPoints.size();
-		std::vector<Match> matches;
+		std::vector<std::pair<int, int>> matches;
 		matches.reserve(nMatches);
 
 		for (int i = 0; i < nMatches; ++i) {
 			if (*distances[i] <= m_maxDistance)
-				matches.push_back(Match{ *indices[i], 1.f });
-			else
-				matches.push_back(Match{ -1, 0.f });
+				// matches.push_back(Match{ *indices[i], 1.f });
+				matches.push_back(std::make_pair(i, *indices[i]));
 		}
 
 		// Release the memory.
