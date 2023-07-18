@@ -51,7 +51,12 @@ void Frame::save_off_format(const std::string & where_to_save){
     std::ofstream OffFile(where_to_save);
     for(auto i : M_k1){
         OffFile << "v " << V_k[i][0] << " " << V_k[i][1] << " " << V_k[i][2] << std::endl; 
-        OffFile << "vn " << N_k[i][0] << " " << N_k[i][1] << " " << N_k[i][2] << std::endl; 
+        if(!std::isnan(N_k[i][0]) && !std::isnan(N_k[i][1]) && !std::isnan(N_k[i][2])){
+            OffFile << "vn " << N_k[i][0] << " " << N_k[i][1] << " " << N_k[i][2] << std::endl;
+        }
+        else{
+            OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
+        } 
     }
     OffFile.close();
 }
@@ -121,12 +126,16 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
 
 std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
     if(!V_k.empty()){
-        for(int i = 0; i < height-1; i++){
-            for(int j = 0; j < width-1; j++){
-               Eigen::Vector3f ans =(V_k[i*width + j+1] - V_k[(i)*width + j]).cross((V_k[(i+1)*width + j] - V_k[(i)*width + j]));
-               ans.normalize();
-               N_k.push_back(ans);
+        //massive mistake here!!
+        for(int i = 0; i < height - 1; i++){
+            for(int j = 0; j < width - 1; j++){
+                Eigen::Vector3f ans =(V_k[i*width + j+1] - V_k[(i)*width + j]).cross((V_k[(i+1)*width + j] - V_k[(i)*width + j]));
+                ans.normalize();
+                N_k.push_back(ans);
             }
+            Eigen::Vector3f ans =(V_k[i*width + (width-1) - 1] - V_k[(i)*width + (width-1)]).cross((V_k[(i+1)*width + (width-1)] - V_k[(i)*width + (width-1)]));
+            ans.normalize();
+            N_k.push_back(ans);
         }
     }
     else{
