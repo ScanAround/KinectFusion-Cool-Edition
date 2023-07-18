@@ -43,7 +43,7 @@ void ICP::correspondence_finder(Eigen::Matrix4f T_curr_frame, Frame & curr_frame
 Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_frame, int iterations, bool cuda){
     
     // source is the live frame F_k and the prev_frame is the ray-casted previous frame F_k-1
-    Eigen::Matrix4f T_gk_z = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f T_gk_z = curr_frame.T_gk;
 
     std::vector<Eigen::Vector3f> source_vectors = curr_frame.V_k; 
 
@@ -117,15 +117,25 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     
     }
 
-Eigen::Matrix4f ICP::pyramid_ICP(Frame_Pyramid & curr_frame, Frame_Pyramid & prev_frame, bool cuda){
+Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
+
+    Eigen::Matrix4f T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[2], *prev_frame_pyramid -> Depth_Pyramid[2], 4, cuda);
+    curr_frame_pyramid -> set_T_gk(T);
     
+    T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[1], *prev_frame_pyramid -> Depth_Pyramid[1], 5, cuda);
+    curr_frame_pyramid -> set_T_gk(T);
+    
+    T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[0], *prev_frame_pyramid -> Depth_Pyramid[0], 10, cuda);
+    curr_frame_pyramid -> set_T_gk(T);
+
+    return T;
 }
 
 int main(){
 
     FreeImage_Initialise();
     const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.295279.png";
+    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031104.463413.png";
     
     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
     frame1->Depth_Pyramid[0]->save_off_format("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/scene1.obj");
@@ -133,11 +143,10 @@ int main(){
     Frame_Pyramid* frame2 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_2), depth_map_dir_2));
     frame2->Depth_Pyramid[0]->save_off_format("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/scene2.obj");
 
-    ICP* icp = new ICP(*frame1, *frame2, 0.1f, 0.1f);
+    ICP* icp = new ICP(*frame1, *frame2, 0.1f, 2.0f);
     
-    
-    auto T = icp->point_to_plane_solver(*frame1->Depth_Pyramid[0], *frame2->Depth_Pyramid[0], 4, false);
-    
+    auto T = icp -> pyramid_ICP(false);
+
     std::cout << T;
 
     std::vector<Eigen::Vector3f> V_tk;
