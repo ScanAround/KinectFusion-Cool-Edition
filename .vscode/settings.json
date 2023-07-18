@@ -74,7 +74,8 @@
         "__string": "cpp",
         "xstring": "cpp",
         "variant": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "ios": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "enabled"
 }
