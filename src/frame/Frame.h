@@ -49,16 +49,16 @@ public:
 
     void apply_G_transform(){
         if(!transformed){
-            for(auto idx:M_k1){
-                V_gk.push_back(T_gk.block(0,0,3,3) * V_k[idx] + T_gk.col(3).head(3)); 
-                N_gk.push_back(T_gk.block(0,0,3,3) * N_k[idx] + T_gk.col(3).head(3)); 
+            for(int idx = 0 ; idx < V_k.size(); idx++){
+                V_gk.push_back(T_gk.block(0,0,3,3) * V_k[idx] + T_gk.block(0,3,3,1)); 
+                N_gk.push_back(T_gk.block(0,0,3,3) * N_k[idx] + T_gk.block(0,3,3,1)); 
             }
         }
         transformed = true;
     };
 
     void apply_transform(Eigen::Matrix4f T, std::vector<Eigen::Vector3f>& V_tk){
-        for(auto idx:M_k1){
+        for(int idx = 0 ; idx < V_k.size(); idx++){
             V_tk.push_back(T.block(0,0,3,3) * V_k[idx] + T.block(0,3,3,1)); 
         }
     };

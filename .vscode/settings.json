@@ -75,7 +75,11 @@
         "xstring": "cpp",
         "variant": "cpp",
         "typeindex": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "__functional_03": "cpp",
+        "target": "cpp",
+        "queue": "cpp",
+        "stack": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "enabled"
 }
