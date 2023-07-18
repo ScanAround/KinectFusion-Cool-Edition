@@ -156,17 +156,3 @@ void Frame::process_image(float sigma_r , float sigma_s ,  int filter_size, bool
     calculate_Vks();
     calculate_Nks();
 }
-
-
-// int main(){
-//     //sanity check
-//     FreeImage_Initialise();
-//     const char * depth_map_dir = "/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    
-//     Frame * frame1 = new Frame(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir), depth_map_dir));
-    
-//     frame1->process_image();
-
-//     // frame1->save_off_format("/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/vertices.obj");
-
-// }
