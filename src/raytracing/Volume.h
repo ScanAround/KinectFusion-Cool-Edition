@@ -3,6 +3,10 @@
 #ifndef VOLUME_H
 #define VOLUME_H
 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cstdlib>
 #include <limits>
 #include <Eigen/Dense>
 typedef unsigned int uint;
@@ -33,6 +37,25 @@ public:
 
 	//! Zeros out the memory
 	void zeroOutMemory();
+
+	// check index out of volume 
+	inline bool outOfVolume(uint _x, uint _y, uint _z)
+	{
+		if (_x < 0 || _x > dx - 1 || _y < 0 || _y > dy - 1 || _z < 0 || _z > dz - 1)
+			return true;
+		return false;
+	}
+
+	inline Eigen::Vector3f worldToGrid(const Eigen::Vector3f& p)
+	{
+		Eigen::Vector3f coord(0.0, 0.0, 0.0);
+
+		coord[0] = (p[0] - min[0]) / (max[0] - min[0]) / ddx;
+		coord[1] = (p[1] - min[1]) / (max[1] - min[1]) / ddy;
+		coord[2] = (p[2] - min[2]) / (max[2] - min[2]) / ddz;
+
+		return coord;
+	}
 
 	//! Set the value at i.
 	inline void set(uint i, double val)
@@ -127,6 +150,33 @@ public:
 	inline uint getPosFromTuple(int x, int y, int z) const
 	{
 		return x*dy*dz + y*dz + z;
+	}
+
+	void writePointCloud(const std::string& filename)
+	{
+		std::ofstream file(filename);
+		file << "OFF" << std::endl;
+		std::vector<std::vector<unsigned int>> vertices;
+		for (unsigned int x = 0; x < getDimX(); x++)
+		{
+			for (unsigned int y = 0; y < getDimY(); y++)
+			{
+				for (unsigned int z = 0; z < getDimZ(); z++)
+				{
+					if (abs(get(x, y, z)) <= 0.05)
+					{	
+						std::vector<unsigned int> v = {x, y, z};
+						vertices.push_back(v);
+					}	
+				}
+			}
+		}
+		file << vertices.size() << " 0 0" << std::endl;
+		for (auto& elem: vertices)
+		{
+			file << elem[0] << " " << elem[1] << " " << elem[2] << std::endl;
+		}
+
 	}
 
 

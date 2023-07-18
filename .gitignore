@@ -3207,6 +3207,7 @@ data/dummy_shiz/level2.png
 .vscode
 
 src/raytracing/Build
+src/raytracing/images
 
 
 src/main
