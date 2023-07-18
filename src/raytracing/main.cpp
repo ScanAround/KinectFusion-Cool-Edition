@@ -32,6 +32,60 @@ void writePointCloud(const std::string& filename, const std::vector<Vertex>& _ve
 	}
 
 }
+float trilinearInterpolation(const Eigen::Vector3f& point,
+	Volume volume,
+	const int voxel_grid_dim_x,
+	const int voxel_grid_dim_y,
+	const int voxel_grid_dim_z) {
+
+	Eigen::Vector3i point_in_grid = point.cast<int>();
+
+	const float vx = (static_cast<float>(point_in_grid.x()) + 0.5f);
+	const float vy = (static_cast<float>(point_in_grid.y()) + 0.5f);
+	const float vz = (static_cast<float>(point_in_grid.z()) + 0.5f);
+
+	point_in_grid.x() = (point.x() < vx) ? (point_in_grid.x() - 1) : point_in_grid.x();
+	point_in_grid.y() = (point.y() < vy) ? (point_in_grid.y() - 1) : point_in_grid.y();
+	point_in_grid.z() = (point.z() < vz) ? (point_in_grid.z() - 1) : point_in_grid.z();
+
+	const float a = (point.x() - (static_cast<float>(point_in_grid.x()) + 0.5f));
+	const float b = (point.y() - (static_cast<float>(point_in_grid.y()) + 0.5f));
+	const float c = (point.z() - (static_cast<float>(point_in_grid.z()) + 0.5f));
+
+	const int xd = point_in_grid.x();
+	const int yd = point_in_grid.y();
+	const int zd = point_in_grid.z();
+	//std::cout << "Volume" << volume;
+	std::cout << "X,y,z Values:" << xd << " " << yd << " " << zd << "\n";
+	std::cout << "Volume values: " << volume.getDimX() << " " << volume.getDimY() << " " << volume.getDimZ() << "\n ";
+	std::cout << "Voxel_grid values: " << voxel_grid_dim_x << " " << voxel_grid_dim_x << " " << voxel_grid_dim_x << "\n ";
+	const float c000 = volume.get((xd),(yd)*voxel_grid_dim_x ,(zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c000 << "\n";
+	const float c001 = volume.get((xd),(yd)*voxel_grid_dim_x , (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c001 << "\n";
+	const float c010 = volume.get((xd),(yd + 1) * voxel_grid_dim_x , (zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c010 << "\n";
+	const float c011 = volume.get((xd),(yd + 1) * voxel_grid_dim_x , (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c011 << "\n";
+	const float c100 = volume.get((xd + 1) , (yd)*voxel_grid_dim_x , (zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c100 << "\n";
+	const float c101 = volume.get((xd + 1) , (yd)*voxel_grid_dim_x , (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c101 << "\n";
+	const float c110 = volume.get((xd + 1) , (yd + 1) * voxel_grid_dim_x , (zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c110 << "\n";
+	const float c111 = volume.get((xd + 1) , (yd + 1) * voxel_grid_dim_x , (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c111 << "\n";
+
+	std::cout << "test_interp";
+	return c000 * (1 - a) * (1 - b) * (1 - c) +
+		c001 * (1 - a) * (1 - b) * c +
+		c010 * (1 - a) * b * (1 - c) +
+		c011 * (1 - a) * b * c +
+		c100 * a * (1 - b) * (1 - c) +
+		c101 * a * (1 - b) * c +
+		c110 * a * b * (1 - c) +
+		c111 * a * b * c;
+}
 
 int main()
 {
@@ -65,8 +119,8 @@ int main()
 
 	Eigen::Matrix3f rotation = rotationZ * rotationY * rotationX;
 
-	std::vector<Vertex> vertices;
-
+	std::vector<Vertex> vertices,normals_vertex;
+	std::vector<Eigen::Vector3f> normals;
 	/* Vertex c = {
 		cameraCenter
 	};
@@ -150,6 +204,79 @@ int main()
 							p  // position
 						};
 						vertices.push_back(v);
+
+						// I could not fully understand why we do this
+						const Eigen::Vector3f location_in_grid = p-cameraCenter;
+						Eigen::Vector3f normal, shifted;
+
+
+						// Dimensions of the volume
+						int voxel_grid_dim_x = 1;
+						int voxel_grid_dim_y = 1;
+						int voxel_grid_dim_z = 1;
+						// X direction normal calculation
+						shifted = location_in_grid;
+						shifted.x() += 1;
+						if (shifted.x() >= vol.getDimX() - 1) {
+							break;
+						}
+						
+						const float Fx1 = trilinearInterpolation(shifted, vol, voxel_grid_dim_x, voxel_grid_dim_y, voxel_grid_dim_z);
+
+						shifted = location_in_grid;
+						shifted.x() -= 1;
+						if (shifted.x() < 1) {
+							break;
+						}
+						const float Fx2 = trilinearInterpolation(shifted, vol, voxel_grid_dim_x, voxel_grid_dim_y, voxel_grid_dim_z);
+						std::cout << "testt";
+						normal.x() = (Fx1 - Fx2);
+						std::cout << "test_end";
+						// Y direction normal calculation
+						shifted = location_in_grid;
+						shifted.y() += 1;
+						if (shifted.y() >= vol.getDimY() - 1) {
+							break;
+						}
+						const float Fy1 = trilinearInterpolation(shifted, vol, voxel_grid_dim_x, voxel_grid_dim_y, voxel_grid_dim_z);
+
+						shifted = location_in_grid;
+						shifted.y() -= 1;
+						if (shifted.y() < 1) {
+							break;
+						}
+						const float Fy2 = trilinearInterpolation(shifted, vol, voxel_grid_dim_x, voxel_grid_dim_y, voxel_grid_dim_z);
+
+						normal.y() = (Fy1 - Fy2);
+
+						// Z direction normal calculation
+						shifted = location_in_grid;
+						shifted.z() += 1;
+						if (shifted.z() >= vol.getDimZ() - 1) {
+							break;
+						}
+						const float Fz1 = trilinearInterpolation(shifted, vol, voxel_grid_dim_x, voxel_grid_dim_y, voxel_grid_dim_z);
+
+						shifted = location_in_grid;
+						shifted.z() -= 1;
+						if (shifted.z() < 1) {
+							break;
+						}
+						const float Fz2 = trilinearInterpolation(shifted, vol, voxel_grid_dim_x, voxel_grid_dim_y, voxel_grid_dim_z);
+
+						normal.z() = (Fz1 - Fz2);
+
+						if (normal.norm() == 0) {
+							break;
+						}
+						Vertex vv = {
+							normal  // position
+						};
+						//std::cout << normal << " ";
+						normals_vertex.push_back(vv);
+						normal.normalize();
+						normals.push_back(normal);
+
 						break;
 					}
 					prevDist = dist;
@@ -171,7 +298,9 @@ int main()
 		}
 	}
 
-	writePointCloud("pointcloud.off", vertices);
+	writePointCloud("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/src/raytracing/pointcloud.off", vertices);
+	writePointCloud("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/src/raytracing/pointcloud_normals.off", normals_vertex);
+
 
 	return 0;
 }
