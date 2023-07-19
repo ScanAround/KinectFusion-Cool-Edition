@@ -12,6 +12,7 @@
 #include <FreeImage.h>
 #include <dirent.h>
 #include <algorithm>
+#include "voxel_grid.h"
 
 namespace kinect_fusion {
 
@@ -38,7 +39,7 @@ class utility {
   // This function loads depth image and returns it as a Eigen::MatrixXd.
   static Eigen::MatrixXd loadDepthImage(const std::string& filename);
 
-  static void writeTSDFToFile(const std::string& filePath, const kinect_fusion::VoxelGrid& grid) {
+  static void writeTSDFToFile(const std::string& filePath, kinect_fusion::VoxelGrid& grid);
 
 };
 

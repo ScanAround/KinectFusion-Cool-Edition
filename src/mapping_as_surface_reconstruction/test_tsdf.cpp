@@ -14,7 +14,6 @@ int main() {
        0, 0, 1;
 
   double mu = 0.02;  // typical truncation limit
-  double weight = 1.0;  // All depth maps have equal weights
 
   // Creating the voxel grid
   size_t dimX = 512, dimY = 512, dimZ = 512;
@@ -31,15 +30,26 @@ int main() {
   // Using static functions from utility namespace
   std::vector<std::string> fileNames = kinect_fusion::utility::getPngFilesInDirectory(directoryPath);
 
+  std::vector<Eigen::MatrixXd> depthMaps;
+  std::vector<Eigen::Matrix4d> poses;
+  std::vector<Eigen::Tensor<double, 3>> W_R_k;
   for (const std::string& fileName : fileNames) {
     std::string imagePath = directoryPath + "/" + fileName;
     Eigen::MatrixXd depthImage = kinect_fusion::utility::loadDepthImage(imagePath);
+    depthMaps.push_back(depthImage);
+
+    // All depth maps have equal weights
+    // Assuming all weights are 1.0 initially
+    Eigen::Tensor<double, 3> weights(dimX, dimY, dimZ);
+    weights.setConstant(1.0);
+    W_R_k.push_back(weights);
 
     // Get the pose matching to the current depth map.
     Eigen::Matrix4d pose = kinect_fusion::utility::getPoseFromTimestamp(imagePath, poseFilePath);
+    poses.push_back(pose);
 
     // Update the global TSDF with the current depth map
-    grid.updateGlobalTSDF(depthImage, pose, K, mu, weight);
+    grid.updateGlobalTSDF(depthMaps, poses, W_R_k, mu, K);
   }
 
   // Write the resulting TSDF to a file
@@ -47,3 +57,5 @@ int main() {
 
   return 0;
 }
+
+

@@ -129,42 +129,51 @@ std::vector<std::string> utility::getPngFilesInDirectory(const std::string& dire
 }
 
 Eigen::MatrixXd utility::loadDepthImage(const std::string& filename) {
-    // Initialise the FreeImage library
-    FreeImage_Initialise();
+  // Initialise the FreeImage library
+  FreeImage_Initialise();
 
-    FIBITMAP* bitmap = FreeImage_Load(FIF_PNG, filename.c_str(), PNG_DEFAULT);
-    if(!bitmap) {
-        // De-initialise before throwing an exception
-        FreeImage_DeInitialise();
-        throw std::runtime_error("Could not load image: " + filename);
-    }
-
-    int width = FreeImage_GetWidth(bitmap);
-    int height = FreeImage_GetHeight(bitmap);
-
-    Eigen::MatrixXd depth_image(height, width);
-
-    for(int i = 0; i < height; ++i) {
-        for(int j = 0; j < width; ++j) {
-            unsigned short depth_value;
-            FreeImage_GetPixelIndex(bitmap, j, i, &depth_value);
-
-            // Scale the depth value
-            depth_image(i, j) = static_cast<double>(depth_value) / 5000.0; // According to dataset specifications, 5000 units correspond to 1 meter
-        }
-    }
-
-    FreeImage_Unload(bitmap);
-
-    // De-initialise the FreeImage library after finishing all operations
+  FIBITMAP* bitmap = FreeImage_Load(FIF_PNG, filename.c_str(), PNG_DEFAULT);
+  if(!bitmap) {
+    // De-initialise before throwing an exception
     FreeImage_DeInitialise();
+    throw std::runtime_error("Could not load image: " + filename);
+  }
 
-    return depth_image;
+  int width = FreeImage_GetWidth(bitmap);
+  int height = FreeImage_GetHeight(bitmap);
+
+  Eigen::MatrixXd depth_image(height, width);
+
+  BYTE *bits = (BYTE*)FreeImage_GetBits(bitmap);
+  int pitch = FreeImage_GetPitch(bitmap);
+
+  for(int i = 0; i < height; ++i) {
+    BYTE *pixel = (BYTE*)bits;
+    for(int j = 0; j < width; ++j) {
+      // Read 16-bit depth value directly from pixel data
+      unsigned short depth_value = *((unsigned short *)pixel);
+
+      // Scale the depth value
+      // According to dataset specifications, 5000 units correspond to 1 meter
+      depth_image(i, j) = static_cast<double>(depth_value) / 5000.0;
+
+      pixel += 2; // Move to next pixel, each pixel is 2 bytes (16 bits)
+    }
+    bits += pitch; // Move to next row
+  }
+
+  FreeImage_Unload(bitmap);
+
+  // De-initialise the FreeImage library after finishing all operations
+  FreeImage_DeInitialise();
+
+  return depth_image;
 }
+
 
 // This function writes the Truncated Signed Distance Field (TSDF) as a text file, with each voxel 
 // written as a separate line in the format x y z tsdf_value.
-void utility::writeTSDFToFile(const std::string& filePath, const kinect_fusion::VoxelGrid& grid) {
+void utility::writeTSDFToFile(const std::string& filePath, kinect_fusion::VoxelGrid& grid) {
   std::ofstream outFile(filePath);
   if (!outFile) {
     std::cerr << "Failed to open file: " << filePath << std::endl;
@@ -183,6 +192,5 @@ void utility::writeTSDFToFile(const std::string& filePath, const kinect_fusion::
 
   outFile.close();
 }
-
 
 }

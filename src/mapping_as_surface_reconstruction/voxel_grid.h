@@ -3,6 +3,7 @@
 #include "voxel.h"
 #include <vector>      // for std::vector
 #include <Eigen/Dense> // for Eigen::Vector3d
+#include <unsupported/Eigen/CXX11/Tensor> // for Eigen::Tensor<double, 3>
 
 // TO DO: Implement the real-time version of the function above in which we process each incoming 
 // depth map as it arrives, updating the global TSDF and weights incrementally instead of 
@@ -22,7 +23,7 @@ private:
   // Psi function, which does the truncation withing the projective TSDF, as described in the 
   // research paper 
   // "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/ismar_2011.pdf".
-  double VoxelGrid::truncatedSignedDistanceFunction(double eta, double mu);
+  double truncatedSignedDistanceFunction(double eta, double mu);
 
 public:
 
@@ -42,8 +43,7 @@ public:
   // Voxel size along Z: 4 / 512 = 0.0078125 meters
   // So, each voxel in our grid would be a cube with a side length of approximately 0.0078125 
   // meters.
-  VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_) : dimX(dimX), 
-           dimY(dimY), dimZ(dimZ), gridSize(gridSize_), center(gridSize * 0.5);
+  VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_);
 
   // The grid is initialized with the origin at [0,0,0] and center at gridSize * 0.5.
   void initializeGrid();
@@ -57,24 +57,24 @@ public:
 
   Voxel& getVoxel(size_t x, size_t y, size_t z);
 
-  size_t getDimX();
+  size_t getDimX() const;
 
-  size_t getDimY();
+  size_t getDimY() const;
 
-  size_t getDimZ()
+  size_t getDimZ() const;
 
   // Global fusion of all depth maps in the volume to a single TSDF as described in the research
   // paper "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/ismar_2011.pdf".
-  void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps, 
-                                   const std::vector<Eigen::Matrix4d>& poses,
-                                   const std::vector<Eigen::MatrixXd>& W_R_k,
-                                   double mu, 
-                                   const Eigen::Matrix4d& K) 
+  void updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps, 
+                        const std::vector<Eigen::Matrix4d>& poses,
+                        const std::vector<Eigen::Tensor<double, 3>>& W_R_k,
+                        double mu, 
+                        const Eigen::Matrix3d& K);
 
   // Projective TSDF function as described in the research paper 
   // "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/ismar_2011.pdf".
   Eigen::Vector2d projectiveTSDF(const Eigen::Vector3d& p, 
-                                 const Eigen::Matrix4d& K, 
+                                 const Eigen::Matrix3d& K, 
                                  const Eigen::Matrix4d& T_g_k, 
                                  const Eigen::MatrixXd& R_k, 
                                  double mu);

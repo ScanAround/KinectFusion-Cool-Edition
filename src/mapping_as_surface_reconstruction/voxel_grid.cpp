@@ -72,9 +72,9 @@ size_t VoxelGrid::getDimZ() const {
 
 void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps, 
                                  const std::vector<Eigen::Matrix4d>& poses,
-                                 const std::vector<Eigen::MatrixXd>& W_R_k,
+                                 const std::vector<Eigen::Tensor<double, 3>>& W_R_k,
                                  double mu, 
-                                 const Eigen::Matrix4d& K) {
+                                 const Eigen::Matrix3d& K) {
   // For each depth map
   for(int k = 0; k < depthMaps.size(); k++) {
     // For each cell in the TSDF grid
@@ -104,18 +104,33 @@ double VoxelGrid::truncatedSignedDistanceFunction(double eta, double mu) {
 }
 
 Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p, 
-                                          const Eigen::Matrix4d& K, 
+                                          const Eigen::Matrix3d& K, 
                                           const Eigen::Matrix4d& T_g_k, 
                                           const Eigen::MatrixXd& R_k, 
                                           double mu) {
   // Transform point p from global frame to the camera coordinate frame at time k
-  Eigen::Vector4d p_camera = T_g_k.inverse() * p.homogeneous();
+  //Eigen::Vector4d p_camera = T_g_k.inverse() * p.homogeneous();
+
+  // Transform points on the sensor plane into image pixels
+  //Eigen::Vector3d p_pixel = K * p_camera;
+  //Eigen::Vector4d p_pixel = K * p_camera;
+
+  // Normalize to get image coordinates
+  //Eigen::Vector2d x = (p_pixel / p_pixel.z()).head<2>();
+  //Eigen::Vector2d x = (p_pixel.head<2>() / p_pixel(2));
+
+  // Transform point p from global frame to the camera coordinate frame at time k
+  Eigen::Vector4d p_camera_homogeneous = T_g_k.inverse() * p.homogeneous();
+
+  // p_camera should be a 3D point
+  Eigen::Vector3d p_camera = p_camera_homogeneous.head<3>() / p_camera_homogeneous(3);
 
   // Transform points on the sensor plane into image pixels
   Eigen::Vector3d p_pixel = K * p_camera;
 
   // Normalize to get image coordinates
-  Eigen::Vector2d x = (p_pixel / p_pixel.z()).head<2>();
+  Eigen::Vector2d x = (p_pixel.head<2>() / p_pixel(2));
+
 
   // Use floor function to get nearest integer pixel coordinates
   Eigen::Vector2i x_nearest = x.cast<int>();
