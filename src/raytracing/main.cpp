@@ -212,7 +212,7 @@ int main()
 	// vol.writePointCloud("pointcloud.off");
 
 	Eigen::Vector3f rayOrigin = vol.worldToGrid(cameraCenter);
-
+	Volume vol_interpolated(Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(0.0, 0.0, 0.0), mc_res, mc_res, mc_res, 1);
 	// Traverse the image pixel by pixel
 	for (unsigned int j = 0; j < imageHeight; j += 4)  // CHANGE TO 1
 	{
@@ -250,16 +250,17 @@ int main()
 					double dist = vol.get(p.cast<int>());
 					if (prevDist > 0 && dist <=0 && s > 0)
 					{	
-						// Eigen::Vector3f n = getNormal(vol, p);
+						 Eigen::Vector3f n = getNormal(vol, p);
 						// If normal is not a valid vector
 						// if (n[0] == 0.0f && n[1] == 0.0f && n[2] == 0.0f)
 						// 	break;
 						float t =trilinearInterpolation(p, vol, 1, 1, 1);
+						vol_interpolated.set(p[0], p[1], p[2], t);
 						std::cout << t << " \n";
-						Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
+						Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol_interpolated, rayOrigin, rayDir, step);
 						Vertex v = {
 							interpolatedP,  // position
-						 	// n  // normal
+						 	 n  // normal
 						};
 						vertices.push_back(v);
 						
@@ -284,7 +285,7 @@ int main()
 		}
 	}
 
-	writePointCloud("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/src/raytracing/pointcloud2.off", vertices, false);
+	writePointCloud("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/src/raytracing/pointcloud_withnormals.off", vertices, true);
 
 	return 0;
 }
