@@ -108,16 +108,6 @@ Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p,
                                           const Eigen::Matrix4d& T_g_k, 
                                           const Eigen::MatrixXd& R_k, 
                                           double mu) {
-  // Transform point p from global frame to the camera coordinate frame at time k
-  //Eigen::Vector4d p_camera = T_g_k.inverse() * p.homogeneous();
-
-  // Transform points on the sensor plane into image pixels
-  //Eigen::Vector3d p_pixel = K * p_camera;
-  //Eigen::Vector4d p_pixel = K * p_camera;
-
-  // Normalize to get image coordinates
-  //Eigen::Vector2d x = (p_pixel / p_pixel.z()).head<2>();
-  //Eigen::Vector2d x = (p_pixel.head<2>() / p_pixel(2));
 
   // Transform point p from global frame to the camera coordinate frame at time k
   Eigen::Vector4d p_camera_homogeneous = T_g_k.inverse() * p.homogeneous();
@@ -131,9 +121,14 @@ Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p,
   // Normalize to get image coordinates
   Eigen::Vector2d x = (p_pixel.head<2>() / p_pixel(2));
 
-
   // Use floor function to get nearest integer pixel coordinates
   Eigen::Vector2i x_nearest = x.cast<int>();
+
+  // Check if coordinates are within the valid range
+  if(x_nearest.x() < 0 || x_nearest.x() >= 640 || x_nearest.y() < 0 || x_nearest.y() >= 480) {
+    // If not, return NaN for the TSDF value and the pixel coordinate's norm.
+    return Eigen::Vector2d(std::numeric_limits<double>::quiet_NaN(), x_nearest.norm());
+  }
 
   // Compute lambda
   double lambda = (K.inverse() * x.homogeneous()).norm();

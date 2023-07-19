@@ -5,17 +5,31 @@ namespace kinect_fusion {
 Eigen::Matrix4d utility::getPoseFromTimestamp(const std::string& depthImageFilename, 
                                               const std::string& poseFilePath) {
   // Extract the timestamp from the filename
-  std::string filenameNoExt = depthImageFilename.substr(0, depthImageFilename.find("."));
-  double timestamp = std::stod(filenameNoExt);
+  std::string filename = depthImageFilename.substr(depthImageFilename.find_last_of("/\\") + 1);
+  std::string filenameNoExt = filename.substr(0, filename.find(".png"));
+
+  // Split prefix and suffix from the timestamp
+  std::string timestampPrefix = filenameNoExt.substr(0, filenameNoExt.find("."));
+  std::string timestampSuffix = filenameNoExt.substr(filenameNoExt.find(".") + 1);
+
+  // Convert prefix and suffix to double
+  double timestampPrefixDbl = std::stod(timestampPrefix);
+  double timestampSuffixDbl = std::stod(timestampSuffix);
 
   std::ifstream poseFile(poseFilePath);
   std::string line;
 
   Eigen::Matrix4d pose;
 
-  double closest_time_diff = std::numeric_limits<double>::infinity();
+  double closest_prefix_diff = std::numeric_limits<double>::infinity();
+  double closest_suffix_diff = std::numeric_limits<double>::infinity();
 
   while (std::getline(poseFile, line)) {
+    // Skip comments
+    if (line.find("#") == 0) {
+      continue;
+    }
+
     std::istringstream iss(line);
     double t, tx, ty, tz, qx, qy, qz, qw;
 
@@ -23,11 +37,25 @@ Eigen::Matrix4d utility::getPoseFromTimestamp(const std::string& depthImageFilen
       break; // Error or comment
     }
 
-    double time_diff = std::abs(t - timestamp);
+    // Split prefix and suffix from the timestamp
+    std::string poseTimestampStr = std::to_string(t);
+    std::string poseTimestampPrefixStr = poseTimestampStr.substr(0, poseTimestampStr.find("."));
+    std::string poseTimestampSuffixStr = poseTimestampStr.substr(poseTimestampStr.find(".") + 1);
+
+    // Convert prefix and suffix to double
+    double poseTimestampPrefixDbl = std::stod(poseTimestampPrefixStr);
+    double poseTimestampSuffixDbl = std::stod(poseTimestampSuffixStr);
+
+    // Compute prefix and suffix differences
+    double prefix_diff = std::abs(poseTimestampPrefixDbl - timestampPrefixDbl);
+    double suffix_diff = std::abs(poseTimestampSuffixDbl - timestampSuffixDbl);
 
     // Check if this is the closest timestamp so far
-    if (time_diff < closest_time_diff) {
-      closest_time_diff = time_diff;
+    if (prefix_diff < closest_prefix_diff || 
+        (prefix_diff == closest_prefix_diff && suffix_diff < closest_suffix_diff)) {
+      closest_prefix_diff = prefix_diff;
+      closest_suffix_diff = suffix_diff;
+
       // This is the pose we want
       Eigen::Vector3d trans(tx, ty, tz);
       Eigen::Quaterniond quat(qw, qx, qy, qz);
@@ -35,7 +63,7 @@ Eigen::Matrix4d utility::getPoseFromTimestamp(const std::string& depthImageFilen
       pose.topRightCorner<3, 1>() = trans;
       pose(3,0) = pose(3,1) = pose(3,2) = 0.0;
       pose(3,3) = 1.0;
-    } else if (time_diff > closest_time_diff) {
+    } else if (prefix_diff > closest_prefix_diff) {
       // The timestamps in the file are in ascending order.
       // If the difference starts to increase, we have passed the closest timestamp.
       break;
