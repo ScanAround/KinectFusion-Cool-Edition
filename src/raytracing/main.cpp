@@ -116,8 +116,8 @@ int main()
 
 	Eigen::Matrix3f rotation = rotationZ * rotationY * rotationX;
 
-	std::vector<Vertex> vertices;
-
+	std::vector<Vertex> vertices,normals_vertex;
+	std::vector<Eigen::Vector3f> normals;
 	/* Vertex c = {
 		cameraCenter
 	};
