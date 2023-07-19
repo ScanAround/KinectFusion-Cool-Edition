@@ -77,7 +77,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
                 A_jT.block(0,0,3,1) = s_i.cross(n_i);
                 A_jT.block(3,0,3,1) = n_i;
 
-                A.selfadjointView<Eigen::Upper>().rankUpdate(A_jT); // only calculates the upper triangle and adds
+                A.selfadjointView<Eigen::Lower>().rankUpdate(A_jT); // only calculates the lower triangle (eigen's ldlt calculates with lower triangle) and adds
 
                 b += A_jT * (n_i.dot(d_i) - n_i.dot(s_i));
                 
@@ -128,7 +128,7 @@ int main(){
 
     FreeImage_Initialise();
     const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.194330.png";
+    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031104.363345.png";
     
     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
     frame1->Depth_Pyramid[0]->save_off_format("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/scene1.obj");
