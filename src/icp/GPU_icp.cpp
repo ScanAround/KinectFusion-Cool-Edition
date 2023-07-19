@@ -59,40 +59,33 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             
             int corr_size = correspondences.size();
             
-            Eigen::MatrixXf A = Eigen::MatrixXf::Zero(corr_size, 6);
-            Eigen::VectorXf b = Eigen::VectorXf::Zero(corr_size);
+            Eigen::MatrixXf A = Eigen::MatrixXf::Zero(6, 6); // supposed to be ATA of the system according to paper
+
+            Eigen::MatrixXf A_jT = Eigen::MatrixXf::Zero(6, 1);
+            
+            Eigen::MatrixXf b = Eigen::MatrixXf::Zero(6, 1); // supposed to be ATb according to paper
             
             // for(auto i: source.M_k1){
             for(int j = 0; j < corr_size; ++j){
-                // get each point's row in the A matrix     
+                // get each point's contribution to ATA
                 // we have to transform our source.V_k into our estimated transformation matrix
                 Eigen::Vector3f s_i = T_gk_z.block(0,0,3,3) * curr_frame.V_k[correspondences[j].first] + T_gk_z.block(0,3,3,1);
                 Eigen::Vector3f d_i = prev_frame.V_gk[correspondences[j].second];
                 
                 Eigen::Vector3f n_i = prev_frame.N_gk[correspondences[j].second];
-
-                Eigen::Vector3f cross_i = s_i.cross(n_i);
                 
-                // this is innefficient since T_gk_1 and V_k are already known and constant 
-                A(j, 0) = cross_i[0];
-                A(j, 1) = cross_i[1];
-                A(j, 2) = cross_i[2];
-                A(j, 3) = n_i[0];
-                A(j, 4) = n_i[1];
-                A(j, 5) = n_i[2];
+                A_jT.block(0,0,3,1) = s_i.cross(n_i);
+                A_jT.block(3,0,3,1) = n_i;
 
-                b(j) = n_i.dot(d_i) - n_i.dot(s_i);
+                A.selfadjointView<Eigen::Upper>().rankUpdate(A_jT); // only calculates the upper triangle and adds
+
+                b += A_jT * (n_i.dot(d_i) - n_i.dot(s_i));
                 
             }
-            // std::cout << A;
-            // std::cout << b;
+            // std::cout << A << std::endl;
+            // std::cout << b << std::endl;
 
-            Eigen::Vector<float, 6> x = A.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
-
-            //could be more efficient maybe because ATA is a symmetric matrix
-            // Eigen::Matrix<float,-1 , -1, Eigen::RowMajor> U = (A.transpose() * A).ldlt().matrixU(); //Upper Triangle of A -> row major according to documentation performance
-            // Eigen::Vector<float, 6> y = U.triangularView<Eigen::Upper>().solve(A.transpose() * b);
-            // Eigen::Vector<float, 6> x = U.triangularView<Eigen::Upper>().solve(y);
+            Eigen::Vector<float, 6> x = A.ldlt().solve(b); //ldlt because ATA not always Positive Definite
             
             float alpha = x[0];
             float beta = x[1];
@@ -135,7 +128,7 @@ int main(){
 
     FreeImage_Initialise();
     const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031104.463413.png";
+    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.194330.png";
     
     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
     frame1->Depth_Pyramid[0]->save_off_format("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/scene1.obj");
@@ -143,7 +136,7 @@ int main(){
     Frame_Pyramid* frame2 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_2), depth_map_dir_2));
     frame2->Depth_Pyramid[0]->save_off_format("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/scene2.obj");
 
-    ICP* icp = new ICP(*frame1, *frame2, 0.1f, 2.0f);
+    ICP* icp = new ICP(*frame1, *frame2, 0.1f, 1.1f);
     
     auto T = icp -> pyramid_ICP(false);
 
