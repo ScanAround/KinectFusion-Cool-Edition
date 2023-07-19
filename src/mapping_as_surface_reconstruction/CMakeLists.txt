@@ -12,6 +12,8 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+include_directories(/usr/include)  # Path to the FreeImage headers
+
 add_library(KinectFusionLib
   voxel_grid.cpp
   voxel.cpp
@@ -21,15 +23,16 @@ add_library(KinectFusionLib
 add_executable(KinectFusionApp test_tsdf.cpp)
 
 # Linking your KinectFusion library to your executable
-target_link_libraries(KinectFusionApp KinectFusionLib ${OpenCV_LIBS})
+target_link_libraries(KinectFusionApp KinectFusionLib ${OpenCV_LIBS} /usr/lib/x86_64-linux-gnu/libfreeimage.so)  # Path to the FreeImage library
 
-# Suppress deprecated warnings
+# Suppress deprecated warnings and some others
+# Narrowing warnings should be solved ideally
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated)
-  target_compile_options(KinectFusionApp PRIVATE -Wno-deprecated)
+  target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
+  target_compile_options(KinectFusionApp PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated-enum-enum-conversion)
-  target_compile_options(KinectFusionApp PRIVATE -Wno-deprecated-enum-enum-conversion)
+  target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
+  target_compile_options(KinectFusionApp PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
 endif()
 
 # This can be run as follows:
