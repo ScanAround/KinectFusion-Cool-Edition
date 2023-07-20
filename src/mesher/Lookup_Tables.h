@@ -34,6 +34,8 @@ int edgeTable[256] = {
 };
 
 int triTable[256][16] = {
+    // -1 means no vertex for triangle 
+    // each value is the edge where the vertex exists
 	{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
 	{ 0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
 	{ 0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
