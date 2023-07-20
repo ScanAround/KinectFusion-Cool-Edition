@@ -26,15 +26,15 @@ struct Vertex
 void writePointCloud(const std::string& filename, const std::vector<Vertex>& _vertices, bool includeNormals=false)
 {
 	std::ofstream file(filename);
-	file << "OFF" << std::endl;
-	file << _vertices.size() << " 0 0" << std::endl;
+	// file << "OFF" << std::endl;
+	// file << _vertices.size() << " 0 0" << std::endl;
 	for (unsigned int i = 0; i < _vertices.size(); ++i)
 	{
-		file << _vertices[i].position[0] << " " << _vertices[i].position[1] << " " << _vertices[i].position[2];
+		file << "v " << _vertices[i].position[0] << " " << _vertices[i].position[1] << " " << _vertices[i].position[2] << std::endl;
 		if (includeNormals)
-			file << " " << _vertices[i].normal[0] << " " << _vertices[i].normal[1] << " " << _vertices[i].normal[2] << std::endl;
-		else
-			file << std::endl;
+			file << "vn " << _vertices[i].normal[0] << " " << _vertices[i].normal[1] << " " << _vertices[i].normal[2] << std::endl;
+		// else
+		//	file << std::endl;
 	}
 }
 
@@ -69,6 +69,7 @@ Eigen::Vector3f getNormal(Volume& vol, const Eigen::Vector3f& p)
 
 Eigen::Vector3f getInterpolatedIntersection(Volume& vol, const Eigen::Vector3f& origin, const Eigen::Vector3f& dir, double step)
 {
+	// TODO: trilinear interpolation of tValue and deltaVale
 	Eigen::Vector3f t = origin + (step - 1) * dir; // before crossing
 	Eigen::Vector3f delta = origin + step * dir;  // after crossing
 	double tValue = vol.get(t.cast<int>());
@@ -198,14 +199,14 @@ int main()
 					double dist = vol.get(p.cast<int>());
 					if (prevDist > 0 && dist <=0 && s > 0)
 					{	
-						// Eigen::Vector3f n = getNormal(vol, p);
+						Eigen::Vector3f n = getNormal(vol, p);
 						// If normal is not a valid vector
-						// if (n[0] == 0.0f && n[1] == 0.0f && n[2] == 0.0f)
-						// 	break;
-						Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
+						if (n[0] == 0.0f && n[1] == 0.0f && n[2] == 0.0f)
+						 	break;
+						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
 						Vertex v = {
-							interpolatedP,  // position
-						 	// n  // normal
+							p,  // position
+						 	n  // normal
 						};
 						vertices.push_back(v);
 						
@@ -230,7 +231,7 @@ int main()
 		}
 	}
 
-	writePointCloud("pointcloud.off", vertices, false);
+	writePointCloud("pointcloud.obj", vertices, true);
 
 	return 0;
 }
