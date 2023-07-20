@@ -25,8 +25,8 @@ int main() {
     Eigen::Vector3d newCenter(0, 0, 1.16); // Center of the voxel grid
     grid.repositionGrid(newCenter);
 
-    const std::string poseFilePath = "/home/anil/Desktop/kinect_fusion_project/rgbd_dataset_freiburg1_xyz/groundtruth.txt";
-    std::string directoryPath = "/home/anil/Desktop/kinect_fusion_project/rgbd_dataset_freiburg1_xyz/depth";
+    const std::string poseFilePath = "../../data/rgbd_dataset_freiburg1_xyz/groundtruth.txt";
+    std::string directoryPath = "../../data/rgbd_dataset_freiburg1_xyz/depth";
 
     // Using static functions from utility namespace
     std::vector<std::string> fileNames = kinect_fusion::utility::getPngFilesInDirectory(directoryPath);
