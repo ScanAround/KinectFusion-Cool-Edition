@@ -3,11 +3,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${vcpkgRoot}/x86-windows/include",
-                "c:/Users/asnra/Desktop/Coding/3D-Scannin-Assignments/Libs/Flann-1.8.4/",
-                "C:/Users/asnra/Desktop/Coding/3D-Scannin-Assignments/Libs/Eigen/include",
-                "C:/Users/asnra/Desktop/Coding/3D-Scannin-Assignments/Libs/FreeImage-3.18.0/Dist/x64"
+                "/usr/include/opencv4",
+                "/usr/include/eigen3/unsupported"
             ],
             "defines": [
                 "_DEBUG",

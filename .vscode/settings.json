@@ -108,7 +108,8 @@
         "xutility": "cpp",
         "core": "cpp",
         "numericaldiff": "cpp",
-        "specialfunctions": "cpp"
+        "specialfunctions": "cpp",
+        "tensor": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "enabled",
     "cmake.configureOnOpen": false
