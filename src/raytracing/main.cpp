@@ -11,14 +11,12 @@
 #define TRUNCATION 1.0
 // #define MAX_MARCHING_STEPS 10000
 #define MAX_MARCHING_STEPS 500
-#define EPSILON 0.1
 
 
 struct Vertex
 {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	// position stored as 4 floats (4th component is supposed to be 1.0) -> why?
 	Eigen::Vector3f position;
 	Eigen::Vector3f normal;
 };
@@ -26,15 +24,22 @@ struct Vertex
 void writePointCloud(const std::string& filename, const std::vector<Vertex>& _vertices, bool includeNormals=false)
 {
 	std::ofstream file(filename);
-	// file << "OFF" << std::endl;
-	// file << _vertices.size() << " 0 0" << std::endl;
-	for (unsigned int i = 0; i < _vertices.size(); ++i)
+
+	if (!includeNormals)
 	{
-		file << "v " << _vertices[i].position[0] << " " << _vertices[i].position[1] << " " << _vertices[i].position[2] << std::endl;
-		if (includeNormals)
+		file << "OFF" << std::endl;
+		file << _vertices.size() << " 0 0" << std::endl;
+
+		for (unsigned int i = 0; i < _vertices.size(); ++i)
+			file << _vertices[i].position[0] << " " << _vertices[i].position[1] << " " << _vertices[i].position[2] << std::endl;
+	}
+	else
+	{
+		for (unsigned int i = 0; i < _vertices.size(); ++i)
+		{
+			file << "v " << _vertices[i].position[0] << " " << _vertices[i].position[1] << " " << _vertices[i].position[2] << std::endl;
 			file << "vn " << _vertices[i].normal[0] << " " << _vertices[i].normal[1] << " " << _vertices[i].normal[2] << std::endl;
-		// else
-		//	file << std::endl;
+		}
 	}
 }
 float trilinearInterpolation(const Eigen::Vector3f& point,
@@ -171,13 +176,8 @@ int main()
 
 	std::vector<Vertex> vertices,normals_vertex;
 	std::vector<Eigen::Vector3f> normals;
-	/* Vertex c = {
-		cameraCenter
-	};
-	vertices.push_back(c); */
 
 	// Init implicit surface
-	// Torus implicitTorus = Torus(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4, 0.1);
 	Sphere implicit = Sphere(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4);
 	// Fill spatial grid with distance to the implicit surface
 	// unsigned int mc_res = 600;
@@ -196,21 +196,9 @@ int main()
 					vol.set(x, y, z, val);
 				else
 					vol.set(x, y, z, TRUNCATION);
-
-				/* if ( x % 10 == 0 && y % 10 == 0 && z % 10 == 0)
-				{
-					Vertex v = {
-							p.cast<float>()  // position
-						};
-					vertices.push_back(v);
-				} */
-					
 			}
 		}
 	}
-
-	// Test function to check the point cloud writer
-	// vol.writePointCloud("pointcloud.off");
 
 	Eigen::Vector3f rayOrigin = vol.worldToGrid(cameraCenter);
 	Volume vol_interpolated(Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(0.0, 0.0, 0.0), mc_res, mc_res, mc_res, 1);
@@ -225,7 +213,6 @@ int main()
 			Eigen::Vector3f rayNextGridSpace = vol.worldToGrid(rayNextWorldSpace);
 
 			Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
-			//Eigen::Vector3f rayDir = rayNextWorldSpace - cameraCenter;
 			rayDir.normalize();
 
 			// TODO: calculate first intersection with the volume (if exists)
@@ -233,16 +220,10 @@ int main()
 			float step = 1.0f;
 			double prevDist = 0;
 			bool intersected = false;
-			/* if (j % 10 == 0 && i % 10 == 0)
-			{ */
+
 			for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
 			{
 				Eigen::Vector3f p = rayOrigin + step * rayDir;
-				/* Vertex v = {
-							p  // position
-						};
-				vertices.push_back(v);
-				step += .5f; */
 				
 				// Think carefully if this cast is correct or not
 				if (!vol.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
@@ -266,7 +247,6 @@ int main()
 					}
 					prevDist = dist;
 					step += 1.0f;
-					// std::cout << dist << std::endl;
 				}
 				else
 				{	
@@ -278,8 +258,6 @@ int main()
 					continue;
 				}						
 			}	
-			//}
-			
 		}
 	}
 
