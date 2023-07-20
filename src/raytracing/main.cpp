@@ -37,6 +37,58 @@ void writePointCloud(const std::string& filename, const std::vector<Vertex>& _ve
 		//	file << std::endl;
 	}
 }
+float trilinearInterpolation(const Eigen::Vector3f& point,
+	Volume& volume,
+	const int voxel_grid_dim_x,
+	const int voxel_grid_dim_y,
+	const int voxel_grid_dim_z) {
+
+	Eigen::Vector3i point_in_grid = point.cast<int>();
+
+	const float vx = (static_cast<float>(point_in_grid[0]) + 0.5f);
+	const float vy = (static_cast<float>(point_in_grid[1]) + 0.5f);
+	const float vz = (static_cast<float>(point_in_grid[2]) + 0.5f);
+
+	point_in_grid[0] = (point[0] < vx) ? (point_in_grid[0] - 1) : point_in_grid[0];
+	point_in_grid[1] = (point[1] < vy) ? (point_in_grid[1] - 1) : point_in_grid[1];
+	point_in_grid[2] = (point[2] < vz) ? (point_in_grid[2] - 1) : point_in_grid[2];
+
+	const float a = (point.x() - (static_cast<float>(point_in_grid[0]) + 0.5f));
+	const float b = (point.y() - (static_cast<float>(point_in_grid[0]) + 0.5f));
+	const float c = (point.z() - (static_cast<float>(point_in_grid[0]) + 0.5f));
+
+	const int xd = point_in_grid[0];
+	const int yd = point_in_grid[1];
+	const int zd = point_in_grid[2];
+	//std::cout << "Volume" << volume;
+	std::cout << "X,y,z Values:" << xd << " " << yd << " " << zd << "\n";
+	std::cout << "Volume values: " << volume.getDimX() << " " << volume.getDimY() << " " << volume.getDimZ() << "\n ";
+	std::cout << "Voxel_grid values: " << voxel_grid_dim_x << " " << voxel_grid_dim_x << " " << voxel_grid_dim_x << "\n ";
+	const float c000 = volume.get((xd), (yd)*voxel_grid_dim_x, (zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c000 << "\n";
+	const float c001 = volume.get((xd), (yd)*voxel_grid_dim_x, (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c001 << "\n";
+	const float c010 = volume.get((xd), (yd + 1) * voxel_grid_dim_x, (zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c010 << "\n";
+	const float c011 = volume.get((xd), (yd + 1) * voxel_grid_dim_x, (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c011 << "\n";
+	const float c100 = volume.get((xd + 1), (yd)*voxel_grid_dim_x, (zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c100 << "\n";
+	const float c101 = volume.get((xd + 1), (yd)*voxel_grid_dim_x, (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c101 << "\n";
+	const float c110 = volume.get((xd + 1), (yd + 1) * voxel_grid_dim_x, (zd)*voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c110 << "\n";
+	const float c111 = volume.get((xd + 1), (yd + 1) * voxel_grid_dim_x, (zd + 1) * voxel_grid_dim_x * voxel_grid_dim_y);
+	std::cout << c111 << "\n";
+	return c000 * (1 - a) * (1 - b) * (1 - c) +
+		c001 * (1 - a) * (1 - b) * c +
+		c010 * (1 - a) * b * (1 - c) +
+		c011 * (1 - a) * b * c +
+		c100 * a * (1 - b) * (1 - c) +
+		c101 * a * (1 - b) * c +
+		c110 * a * b * (1 - c) +
+		c111 * a * b * c;
+}
 
 Eigen::Vector3f getNormal(Volume& vol, const Eigen::Vector3f& p)
 {
@@ -161,7 +213,7 @@ int main()
 	// vol.writePointCloud("pointcloud.off");
 
 	Eigen::Vector3f rayOrigin = vol.worldToGrid(cameraCenter);
-
+	Volume vol_interpolated(Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(0.0, 0.0, 0.0), mc_res, mc_res, mc_res, 1);
 	// Traverse the image pixel by pixel
 	for (unsigned int j = 0; j < imageHeight; j += 4)  // CHANGE TO 1
 	{
