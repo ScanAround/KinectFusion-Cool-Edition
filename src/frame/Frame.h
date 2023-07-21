@@ -4,6 +4,7 @@
 #include <eigen3/Eigen/Dense>
 #include <FreeImage.h>
 #include <map>
+#include <memory>
 
 class Frame{
 
@@ -11,6 +12,8 @@ class Frame{
 public:
 
     Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
+    
+    Frame(const std::unique_ptr<char> image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
     
     ~Frame();
     

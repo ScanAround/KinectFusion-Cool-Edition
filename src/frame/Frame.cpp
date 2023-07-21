@@ -6,6 +6,8 @@
 #include <math.h>
 #include <array>
 #include <vector>
+
+
 #define MINF -std::numeric_limits<float>::infinity()
 
 inline double Frame::N_sigma(const float& sigma, const float &t){
@@ -75,6 +77,28 @@ Frame::Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate): dib
                         0.0f, 0.0f, 1.0f;
 
     this -> T_gk = T_gk;
+}
+
+Frame::Frame(const std::unique_ptr<char> image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate){
+    
+    FreeImage_Initialise();
+
+    this -> dib = FreeImage_Load(FreeImage_GetFileType(image_dir.get()), image_dir.get());
+
+    width = FreeImage_GetWidth(this->dib);
+    height = FreeImage_GetHeight(this->dib);
+    
+    Depth_k = new float[width*height]; // have to rescale according to the data 
+
+    Raw_k = (float *) FreeImage_GetBits(this->dib) ; // have to rescale according to the data 
+    
+    K_calibration  <<  525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
+                        0.0f, 525.0f / sub_sampling_rate, 239.5f/ sub_sampling_rate,
+                        0.0f, 0.0f, 1.0f;
+
+    this -> T_gk = T_gk;
+
+    FreeImage_DeInitialise();
 }
 
 Frame::~Frame(){
