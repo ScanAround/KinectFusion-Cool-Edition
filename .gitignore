@@ -3334,3 +3334,6 @@ src/mesher/build/CMakeFiles/marching_debug.dir/progress.make
 src/tsdf/build/KinectFusionApp
 src/tsdf/CMakeLists.txt
 .gitignore
+global_fusion_result.txt
+mesh.off
+.vscode/settings.json
