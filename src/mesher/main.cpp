@@ -9,7 +9,7 @@
 
 int main(){
     Eigen::Vector3d gridSize(1.1, 1.1, 1.1); 
-    unsigned int res = 450;
+    unsigned int res = 128;
     std::vector<Eigen::MatrixXd> depthMaps;
     std::vector<Eigen::Matrix4d> poses;
     std::vector<Eigen::Tensor<double, 3>> W_R_k;
@@ -54,5 +54,5 @@ int main(){
     // Write the resulting TSDF to a file
     kinect_fusion::utility::writeTSDFToFile("global_fusion_result.txt", grid);
 
-    mesher -> Mesher(grid);
+    mesher -> Mesher(grid, 0);
 }
