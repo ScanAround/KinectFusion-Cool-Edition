@@ -20,6 +20,7 @@ add_library(KinectFusionLib
   kinect_fusion_utility.cpp
   ../mesher/Marching_Cubes.h
   ../mesher/Lookup_Tables.h
+  ../frame/Frame.cpp
 )
 
 add_executable(KinectFusionApp test_tsdf.cpp)

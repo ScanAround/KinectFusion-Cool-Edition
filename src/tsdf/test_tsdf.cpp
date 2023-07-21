@@ -1,80 +1,55 @@
 #include "voxel_grid.h"
 #include "kinect_fusion_utility.h"
 #include "../mesher/Marching_Cubes.h"
+#include <algorithm>
 
 int main() {
 
-std::unique_ptr<Marching_Cubes> mesher;
+double tx = 1.3434, ty = 0.6271, tz = 1.6606;
+double qx = 0.6583, qy = 0.6112, qz = -0.2938, qw = -0.3266;
 
-  try {
-    double f_x = 517.3;  // focal length x
-    double f_y = 516.5;  // focal length y
-    double c_x = 318.6;  // optical center x
-    double c_y = 255.3;  // optical center y
+// Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+Eigen::Matrix4d pose;
+Eigen::Vector3d trans(tx, ty, tz);
+Eigen::Quaterniond quat(qw, qx, qy, qz);
 
-    Eigen::Matrix3d K;
-    K << f_x, 0, c_x,
-        0, f_y, c_y,
-        0, 0, 1;
+pose.topLeftCorner<3, 3>() = quat.toRotationMatrix();
+pose.topRightCorner<3, 1>() = trans;
+pose(3,0) = pose(3,1) = pose(3,2) = 0.0;
+pose(3,3) = 1.0;
 
-    double mu = 0.5;  // typical truncation limit
+auto pose_f = pose.cast<float>();
 
-    // Creating the voxel grid
-    size_t dimX = 128, dimY = 128, dimZ = 128;
-    Eigen::Vector3d gridSize(4, 4, 4); // in meters
-    kinect_fusion::VoxelGrid grid(dimX, dimY, dimZ, gridSize);
+const char* img_loc = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png"; 
 
-    // Reposition the voxel grid
-    Eigen::Vector3d newCenter(0, 0, 1.16); // Center of the voxel grid
-    grid.repositionGrid(newCenter);
+// Frame* frame1 = new Frame(*FreeImage_Load(FreeImage_GetFileType(img_loc), img_loc), pose_f, 1.0);
+Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
 
-    const std::string poseFilePath = "data/rgbd_dataset_freiburg1_xyz/groundtruth.txt";
-    std::string directoryPath = "data/rgbd_dataset_freiburg1_xyz/depth";
+frame1 -> process_image();
 
-    // Using static functions from utility namespace
-    std::vector<std::string> fileNames = kinect_fusion::utility::getPngFilesInDirectory(directoryPath);
+std::vector<Eigen::Vector3f> V_tk;
 
-    std::vector<Eigen::MatrixXd> depthMaps;
-    std::vector<Eigen::Matrix4d> poses;
-    std::vector<Eigen::Tensor<double, 3>> W_R_k;
-    size_t counter {0};
-    for (const std::string& fileName : fileNames) {
-      std::string imagePath = directoryPath + "/" + fileName;
-      Eigen::MatrixXd depthImage = kinect_fusion::utility::loadDepthImage(imagePath);
-      depthMaps.push_back(depthImage);
+frame1 -> apply_transform(pose_f, V_tk);
 
-      std::cout << "Depth map" << counter << " extracted." << std::endl;
+std::ofstream OffFile("G_Frame1.obj");
+for(auto V : V_tk){
+    OffFile << "v " << V[0] << " " << V[1] << " " << V[2] << std::endl; 
+}
 
-      // All depth maps have equal weights
-      // Assuming all weights are 1.0 initially
-      Eigen::Tensor<double, 3> weights(dimX, dimY, dimZ);
-      weights.setConstant(1.0);
-      W_R_k.push_back(weights);
+Eigen::Vector3d gridSize(1,1,1); 
+unsigned int res = 128;
 
-      // Get the pose matching to the current depth map.
-      Eigen::Matrix4d pose = kinect_fusion::utility::getPoseFromTimestamp(imagePath, poseFilePath);
-      poses.push_back(pose);
+kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize);
+// grid.repositionGrid(Eigen::Vector3d(4,4,4)); // doesn't do anything actually!!!
 
-      // Update the global TSDF with the current depth map
-      grid.updateGlobalTSDF(depthMaps, poses, W_R_k, mu, K);
-                
-      mesher -> Mesher(grid, 0.0);
-      
-      counter++;
-      if(counter == 1) break;
-    }
+std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
 
-    // Write the resulting TSDF to a file
-    kinect_fusion::utility::writeTSDFToFile("global_fusion_result.txt", grid);
-  }
-  catch (const std::exception& e) {
-    std::cerr << "Exception caught: " << e.what() << '\n';
-    return 1;
-  }
-  catch (...) {
-    std::cerr << "Unknown exception caught\n";
-    return 1;
-  }
+double mu = 0.02;
 
-  return 0;
+grid.updateGlobalTSDF(*frame1, mu);
+
+// Write the resulting TSDF to a file
+kinect_fusion::utility::writeTSDFToFile("global_fusion_result.txt", grid);
+
+mesher -> Mesher(grid, 0, "mesh2.off");
 }
