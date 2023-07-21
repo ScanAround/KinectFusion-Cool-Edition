@@ -13,17 +13,9 @@ public:
 
     Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
     
-    Frame(const std::unique_ptr<char> image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
+    Frame(const char * image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
     
     ~Frame();
-    
-    Frame(const Frame & from_other);
-    
-    Frame &operator=(const Frame & Depth_k);
-    
-    Frame(Frame&& from_other):Depth_k(from_other.Depth_k){};
-    
-    Frame &operator=(Frame&& from_other);
 
     FIBITMAP * Apply_Bilateral(const float & sigma_r, const float & float_s, const int & filter_size);
 
@@ -75,7 +67,7 @@ public:
         }
     };
 
-    void apply_transform(Eigen::Matrix4f& T, std::vector<Eigen::Vector3f>& V_tk){
+    void apply_transform(Eigen::Matrix4f T, std::vector<Eigen::Vector3f>& V_tk){
         for(int idx = 0 ; idx < V_k.size(); idx++){
             V_tk.push_back(T.block(0,0,3,3) * V_k[idx] + T.block(0,3,3,1)); 
         }
@@ -114,15 +106,17 @@ public:
     int width;
     int height;
 
-private:
+    float get_R(int x, int y){
+        return this -> Raw_k[y*width + x] * 255.0f * 255.0f;
+    };
 
+
+private:
     FIBITMAP * dib;
-    
     //Initial Raw Depth Map
     float * Raw_k;
     //Depth Map
     float * Depth_k; 
-    //Calibration Matrix
 
 };
 
