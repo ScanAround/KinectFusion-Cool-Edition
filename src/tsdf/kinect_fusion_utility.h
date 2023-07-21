@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -8,7 +8,8 @@
 #include <iostream>
 #include <filesystem>
 #include <vector>
-#include <opencv2/opencv.hpp>
+// #include <opencv4/opencv2/opencv.hpp>
+#include <opencv4/opencv2/opencv.hpp>
 #include <FreeImage.h>
 #include <dirent.h>
 #include <algorithm>

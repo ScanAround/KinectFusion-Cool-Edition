@@ -18,6 +18,8 @@ add_library(KinectFusionLib
   voxel_grid.cpp
   voxel.cpp
   kinect_fusion_utility.cpp
+  ../mesher/Marching_Cubes.h
+  ../mesher/Lookup_Tables.h
 )
 
 add_executable(KinectFusionApp test_tsdf.cpp)

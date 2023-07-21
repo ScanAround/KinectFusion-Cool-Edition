@@ -2,8 +2,8 @@
 
 #include "voxel.h"
 #include <vector>      // for std::vector
-#include <Eigen/Dense> // for Eigen::Vector3d
-#include <unsupported/Eigen/CXX11/Tensor> // for Eigen::Tensor<double, 3>
+#include <eigen3/Eigen/Dense> // for Eigen::Vector3d
+#include <eigen3/unsupported/Eigen/CXX11/Tensor> // for Eigen::Tensor<double, 3>
 
 // TO DO: Implement the real-time version of the function above in which we process each incoming 
 // depth map as it arrives, updating the global TSDF and weights incrementally instead of 
