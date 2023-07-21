@@ -88,7 +88,12 @@ void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps,
           double W_R_k_p = W_R_k[k](x, y, z); // The weight from the k-th depth map
           if(std::isnan(F_R_k_p)) continue; // Skip if F_R_k_p is null
           // Update F and W using the provided equations
-          voxel.tsdfValue = (voxel.weight * voxel.tsdfValue + W_R_k_p * F_R_k_p) / (voxel.weight + W_R_k_p);
+          if(std::isnan(voxel.tsdfValue) && std::isnan(voxel.weight)){
+            voxel.tsdfValue = (W_R_k_p * F_R_k_p) / (W_R_k_p);
+          }
+          else{
+            voxel.tsdfValue = (voxel.weight * voxel.tsdfValue + W_R_k_p * F_R_k_p) / (voxel.weight + W_R_k_p);
+          }
           voxel.weight += W_R_k_p;
         }
       }
@@ -98,7 +103,7 @@ void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps,
 
 double VoxelGrid::truncatedSignedDistanceFunction(double eta, double mu) {
   if (eta >= -mu)
-      return std::min(1.0, eta / mu) * (eta >= 0 ? 1 : -1);
+      return std::min(1.0, eta / mu);
   else
       return std::numeric_limits<double>::quiet_NaN(); // NaN is used to represent "no data"
 }
@@ -134,7 +139,8 @@ Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p,
   double lambda = (K.inverse() * x.homogeneous()).norm();
 
   // Compute eta
-  double eta = 1/lambda * (p_camera.norm() - R_k(x_nearest.y(), x_nearest.x()));
+  double eta = 1/lambda * p_camera.norm() - R_k(x_nearest.y(), x_nearest.x());
+  // double eta = 1/lambda * (T_g_k.block(0,3,3,1) - p_camera).norm() - R_k(x_nearest.y(), x_nearest.x());
 
   // Compute TSDF value
   double F_R_k_p = truncatedSignedDistanceFunction(eta, mu);
