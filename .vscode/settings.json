@@ -112,7 +112,7 @@
         "tensor": "cpp",
         "__node_handle": "cpp",
         "*.ipp": "cpp",
-        "tensor": "cpp"
+        "__locale": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "enabled",
     "cmake.configureOnOpen": false
