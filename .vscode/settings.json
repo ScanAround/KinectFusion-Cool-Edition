@@ -109,6 +109,9 @@
         "core": "cpp",
         "numericaldiff": "cpp",
         "specialfunctions": "cpp",
+        "tensor": "cpp",
+        "__node_handle": "cpp",
+        "*.ipp": "cpp",
         "tensor": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "enabled",

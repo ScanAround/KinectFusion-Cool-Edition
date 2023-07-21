@@ -207,13 +207,15 @@ void utility::writeTSDFToFile(const std::string& filePath, kinect_fusion::VoxelG
     std::cerr << "Failed to open file: " << filePath << std::endl;
     return;
   }
-
+  
   for (size_t x = 0; x < grid.getDimX(); ++x) {
     for (size_t y = 0; y < grid.getDimY(); ++y) {
       for (size_t z = 0; z < grid.getDimZ(); ++z) {
         kinect_fusion::Voxel& voxel = grid.getVoxel(x, y, z);
+        if (!std::isnan(voxel.tsdfValue)){
         outFile << voxel.position(0) << " " << voxel.position(1) << " " << voxel.position(2) 
                 << " " << voxel.tsdfValue << "\n";
+        }
       }
     }
   }

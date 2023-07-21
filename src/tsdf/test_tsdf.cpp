@@ -1,7 +1,10 @@
 #include "voxel_grid.h"
 #include "kinect_fusion_utility.h"
+#include "../mesher/Marching_Cubes.h"
 
 int main() {
+
+std::unique_ptr<Marching_Cubes> mesher;
 
   try {
     double f_x = 517.3;  // focal length x
@@ -14,19 +17,19 @@ int main() {
         0, f_y, c_y,
         0, 0, 1;
 
-    double mu = 0.02;  // typical truncation limit
+    double mu = 0.5;  // typical truncation limit
 
     // Creating the voxel grid
-    size_t dimX = 512, dimY = 512, dimZ = 512;
+    size_t dimX = 128, dimY = 128, dimZ = 128;
     Eigen::Vector3d gridSize(4, 4, 4); // in meters
     kinect_fusion::VoxelGrid grid(dimX, dimY, dimZ, gridSize);
 
     // Reposition the voxel grid
-    Eigen::Vector3d newCenter(0, 0, 1.16); // Center of the voxel grid
+    Eigen::Vector3d newCenter(2, 2, 2); // Center of the voxel grid
     grid.repositionGrid(newCenter);
 
-    const std::string poseFilePath = "/home/anil/Desktop/kinect_fusion_project/rgbd_dataset_freiburg1_xyz/groundtruth.txt";
-    std::string directoryPath = "/home/anil/Desktop/kinect_fusion_project/rgbd_dataset_freiburg1_xyz/depth";
+    const std::string poseFilePath = "data/rgbd_dataset_freiburg1_xyz/groundtruth.txt";
+    std::string directoryPath = "data/rgbd_dataset_freiburg1_xyz/depth";
 
     // Using static functions from utility namespace
     std::vector<std::string> fileNames = kinect_fusion::utility::getPngFilesInDirectory(directoryPath);
@@ -54,8 +57,11 @@ int main() {
 
       // Update the global TSDF with the current depth map
       grid.updateGlobalTSDF(depthMaps, poses, W_R_k, mu, K);
+                
+      // mesher -> Mesher(grid);
       
       counter++;
+      if(counter == 1) break;
     }
 
     // Write the resulting TSDF to a file
