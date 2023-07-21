@@ -25,7 +25,7 @@ std::unique_ptr<Marching_Cubes> mesher;
     kinect_fusion::VoxelGrid grid(dimX, dimY, dimZ, gridSize);
 
     // Reposition the voxel grid
-    Eigen::Vector3d newCenter(2, 2, 2); // Center of the voxel grid
+    Eigen::Vector3d newCenter(0, 0, 1.16); // Center of the voxel grid
     grid.repositionGrid(newCenter);
 
     const std::string poseFilePath = "data/rgbd_dataset_freiburg1_xyz/groundtruth.txt";
@@ -58,7 +58,7 @@ std::unique_ptr<Marching_Cubes> mesher;
       // Update the global TSDF with the current depth map
       grid.updateGlobalTSDF(depthMaps, poses, W_R_k, mu, K);
                 
-      // mesher -> Mesher(grid);
+      mesher -> Mesher(grid, 0.0);
       
       counter++;
       if(counter == 1) break;
