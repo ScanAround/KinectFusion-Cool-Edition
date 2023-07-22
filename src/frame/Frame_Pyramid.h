@@ -14,14 +14,6 @@ public:
 
     ~Frame_Pyramid();
 
-    Frame_Pyramid(const Frame_Pyramid & from_other) {};
-
-    Frame_Pyramid & operator=(const Frame_Pyramid & from_other);
-
-    Frame_Pyramid(Frame_Pyramid && from_other) {};
-    
-    Frame_Pyramid &operator=(Frame_Pyramid && from_other);
-
     Eigen::Matrix4f T_gk;
 
     void set_T_gk(Eigen::Matrix4f& T_gk){
