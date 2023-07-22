@@ -5,7 +5,7 @@
 namespace kinect_fusion {
 
 VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_) : 
-                    dimX(dimX), dimY(dimY), dimZ(dimZ), gridSize(gridSize_), 
+                    dimX(dimX), dimY(dimY), dimZ(dimZ), dimYZ(dimY*dimZ), gridSize(gridSize_), 
                     center(gridSize * 0.5) {
   // initially the grid is centered at gridSize * 0.5
   voxelSize = gridSize.cwiseQuotient(Eigen::Vector3d(dimX, dimY, dimZ));
@@ -33,7 +33,7 @@ void VoxelGrid::initializeGrid() {
         // indices (3, 2, 1), the position of this voxel in the global frame would be 
         // (0.3, 0.2, 0.1).
         // grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
-        grid[x*dimY*dimZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
+        grid[x*dimYZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
       }
     }
   }
@@ -47,7 +47,7 @@ void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
     for(size_t y = 0; y < dimY; ++y) {
       for(size_t z = 0; z < dimZ; ++z) {
         // Apply the translation to each voxel
-        grid[x*dimY*dimZ + y*dimZ + z].position += translation;
+        grid[x*dimYZ + y*dimZ + z].position += translation;
       }
     }
   }
@@ -56,7 +56,7 @@ void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
 }
 
 Voxel& VoxelGrid::getVoxel(size_t x, size_t y, size_t z) {
-  return grid[x*dimY*dimZ + y*dimZ + z];
+  return grid[x*dimYZ + y*dimZ + z];
 }
 
 size_t VoxelGrid::getDimX() const {
