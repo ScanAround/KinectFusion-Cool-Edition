@@ -120,7 +120,6 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
           else{
             voxel.tsdfValue = (voxel.tsdfValue + F_R_k_p) / 2;
           }
-          // voxel.weight += 1;
         }
       }
     }

@@ -84,8 +84,8 @@ public:
   
 
   Eigen::Vector2d projectiveTSDF(const Eigen::Vector3d& p, 
-                               Frame & curr_frame, 
-                               double mu);
+                                 Frame & curr_frame, 
+                                 double mu);
 };
 
 }
