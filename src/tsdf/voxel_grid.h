@@ -14,7 +14,7 @@ namespace kinect_fusion {
 // Updated VoxelGrid
 class VoxelGrid {
 private:
-  std::vector<std::vector<std::vector<Voxel>>> grid;
+  std::vector<Voxel> grid;
   size_t dimX, dimY, dimZ;
   Eigen::Vector3d gridSize;
   Eigen::Vector3d voxelSize;
