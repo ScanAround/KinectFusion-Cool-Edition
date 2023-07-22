@@ -3337,3 +3337,5 @@ src/tsdf/CMakeLists.txt
 global_fusion_result.txt
 mesh.off
 .vscode/settings.json
+src/tsdf/build/CMakeFiles/KinectFusionLib.dir/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/src/frame/Frame.cpp.o
+src/tsdf/build/CMakeFiles/KinectFusionLib.dir/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/src/frame/Frame.cpp.o.d
