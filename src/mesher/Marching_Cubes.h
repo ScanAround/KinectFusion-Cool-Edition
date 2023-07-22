@@ -121,10 +121,14 @@ class Marching_Cubes{
             /* Create the triangle */
             ntriang = 0;
             for (int i = 0; triTable[cubeindex][i] != -1; i += 3) {
-                triangles[ntriang].p[0] = vertlist[triTable[cubeindex][i]];
-                triangles[ntriang].p[1] = vertlist[triTable[cubeindex][i + 1]];
-                triangles[ntriang].p[2] = vertlist[triTable[cubeindex][i + 2]];
-                ntriang++;
+                if(!std::isnan(vertlist[triTable[cubeindex][i]][0])
+                && !std::isnan(vertlist[triTable[cubeindex][i + 1]][0])
+                && !std::isnan(vertlist[triTable[cubeindex][i + 2]][0])){
+                    triangles[ntriang].p[0] = vertlist[triTable[cubeindex][i]];
+                    triangles[ntriang].p[1] = vertlist[triTable[cubeindex][i + 1]];
+                    triangles[ntriang].p[2] = vertlist[triTable[cubeindex][i + 2]];
+                    ntriang++;
+                }
             }
 
             return ntriang;
