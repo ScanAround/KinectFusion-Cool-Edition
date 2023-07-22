@@ -103,8 +103,8 @@ dib(FreeImage_ConvertToFloat(FreeImage_Load(FreeImage_GetFileType(image_dir), im
 
 Frame::~Frame(){
     if(dib != nullptr){delete dib;}
-    if(Depth_k != nullptr){delete Depth_k;}
-    if(Raw_k != nullptr){delete Raw_k;}
+    if(Depth_k != nullptr){delete[] Depth_k;}
+    if(Raw_k != nullptr){delete[] Raw_k;}
 }
 
 std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
