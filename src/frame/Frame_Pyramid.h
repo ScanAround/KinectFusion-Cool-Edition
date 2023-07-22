@@ -11,6 +11,8 @@ public:
     std::array<Frame * , 3> Depth_Pyramid;
 
     Frame_Pyramid(FIBITMAP & dib);
+    
+    Frame_Pyramid(const char * image_dir);
 
     ~Frame_Pyramid();
 
