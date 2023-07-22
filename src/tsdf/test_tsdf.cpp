@@ -2,8 +2,11 @@
 #include "kinect_fusion_utility.h"
 #include "../mesher/Marching_Cubes.h"
 #include <algorithm>
+#include <chrono>
 
 int main() {
+
+auto start = std::chrono::high_resolution_clock::now();
 
 double tx = 1.3434, ty = 0.6271, tz = 1.6606;
 double qx = 0.6583, qy = 0.6112, qz = -0.2938, qw = -0.3266;
@@ -22,7 +25,6 @@ auto pose_f = pose.cast<float>();
 
 const char* img_loc = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png"; 
 
-// Frame* frame1 = new Frame(*FreeImage_Load(FreeImage_GetFileType(img_loc), img_loc), pose_f, 1.0);
 Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
 
 frame1 -> process_image();
@@ -52,4 +54,9 @@ grid.updateGlobalTSDF(*frame1, mu);
 kinect_fusion::utility::writeTSDFToFile("global_fusion_result.txt", grid);
 
 mesher -> Mesher(grid, 0, "mesh2.off");
+
+auto end = std::chrono::high_resolution_clock::now();
+auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+std::cout << "time for execution: " << duration << std::endl; 
 }

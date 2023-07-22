@@ -15,17 +15,16 @@ VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d grid
 void VoxelGrid::initializeGrid() {
 
   // The following is a way to initialize a 3D array/vector without for loops.
-  grid = std::vector<std::vector<std::vector<Voxel>>>(dimX, 
-          std::vector<std::vector<Voxel>>(dimY, std::vector<Voxel>(dimZ)));
+  grid = std::vector<Voxel>(dimX * dimY * dimZ);
   
   // In essence, we're scaling the voxel indices by the size of each voxel to get the position in 
   // the global frame. This is done because the voxel indices are in grid coordinates (which range 
   // from 0 to dimX-1, 0 to dimY-1, and 0 to dimZ-1), while we want the position in world 
   // coordinates (which can be any real numbers). So, we convert from grid coordinates to world 
   // coordinates by multiplying with the size of each voxel.
-  for(size_t i = 0; i < dimX; ++i) {
-    for(size_t j = 0; j < dimY; ++j) {
-      for(size_t k = 0; k < dimZ; ++k) {
+  for(size_t x = 0; x < dimX; ++x) {
+    for(size_t y = 0; y < dimY; ++y) {
+      for(size_t z = 0; z < dimZ; ++z) {
         // The voxel position is calculated by simply multiplying the voxel size by the 
         // corresponding index, which gives the voxel's position in the global frame. The position 
         // of each voxel is computed as the product of the voxel's index and the size of each 
@@ -33,7 +32,8 @@ void VoxelGrid::initializeGrid() {
         // if a voxel's size is 0.1 meter in each dimension, and we're looking at the voxel at 
         // indices (3, 2, 1), the position of this voxel in the global frame would be 
         // (0.3, 0.2, 0.1).
-        grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
+        // grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
+        grid[x*dimY*dimZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
       }
     }
   }
@@ -43,11 +43,11 @@ void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
   // Calculate the translation vector
   Eigen::Vector3d translation = newCenter - center;
 
-  for(size_t i = 0; i < dimX; ++i) {
-    for(size_t j = 0; j < dimY; ++j) {
-      for(size_t k = 0; k < dimZ; ++k) {
+  for(size_t x = 0; x < dimX; ++x) {
+    for(size_t y = 0; y < dimY; ++y) {
+      for(size_t z = 0; z < dimZ; ++z) {
         // Apply the translation to each voxel
-        grid[i][j][k].position += translation;
+        grid[x*dimY*dimZ + y*dimZ + z].position += translation;
       }
     }
   }
@@ -56,7 +56,7 @@ void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
 }
 
 Voxel& VoxelGrid::getVoxel(size_t x, size_t y, size_t z) {
-  return grid[x][y][z];
+  return grid[x*dimY*dimZ + y*dimZ + z];
 }
 
 size_t VoxelGrid::getDimX() const {
