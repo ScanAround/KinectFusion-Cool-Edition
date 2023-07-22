@@ -4,6 +4,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "Volume.h"
+#include "Ray.h"
 
 #define MAX_MARCHING_STEPS 5000
 #define MINF -std::numeric_limits<float>::infinity()

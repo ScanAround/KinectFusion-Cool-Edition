@@ -13,6 +13,7 @@ find_package(Eigen3 REQUIRED)
 
 set(HEADERS
 	ImplicitSurface.h
+	Ray.h
 	Raycasting.h
 	Volume.h
 )
@@ -21,6 +22,7 @@ set(SOURCES
 	main.cpp
 	Volume.cpp
 	Raycasting.cpp
+	Ray.cpp
 )
 
 add_executable(raycasting ${HEADERS} ${SOURCES})

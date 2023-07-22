@@ -22,6 +22,8 @@ Vertex Raycasting::castOne(const unsigned int i, const unsigned int j)
     Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
     rayDir.normalize();
 
+    Ray r(rayOrigin, rayDir);
+
     // TODO: calculate first intersection with the volume (if exists)
     // First, let's try step size equal to one single voxel
     float step = 1.0f;
@@ -30,7 +32,7 @@ Vertex Raycasting::castOne(const unsigned int i, const unsigned int j)
 
     for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
     {
-        Eigen::Vector3f p = rayOrigin + step * rayDir;
+        Eigen::Vector3f p = r.at(step);
         
         // Think carefully if this cast is correct or not
         if (!tsdf.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
