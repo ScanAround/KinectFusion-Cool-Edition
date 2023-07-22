@@ -6,20 +6,21 @@
 #include <Eigen/Dense>
 #include "ImplicitSurface.h"
 #include "Volume.h"
+#include "Raycasting.h"
 
 // TODO: choose optimal truncation value
 #define TRUNCATION 1.0
 // #define MAX_MARCHING_STEPS 10000
 #define MAX_MARCHING_STEPS 500
 
-
+/*
 struct Vertex
 {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	Eigen::Vector3f position;
 	Eigen::Vector3f normal;
-};
+};*/
 
 void writePointCloud(const std::string& filename, const std::vector<Vertex>& _vertices, bool includeNormals=false)
 {
@@ -95,62 +96,8 @@ float trilinearInterpolation(const Eigen::Vector3f& point,
 		c111 * a * b * c;
 }
 
-Eigen::Vector3f getNormal(Volume& vol, const Eigen::Vector3f& p)
-{
-	Eigen::Vector3i pInt = p.cast<int>();
-	// Numerical derivatives
-	if (!vol.outOfVolume(pInt[0] + 1, pInt[1], pInt[2]) && 
-		!vol.outOfVolume(pInt[0] - 1, pInt[1], pInt[2]) && 
-		!vol.outOfVolume(pInt[0], pInt[1] + 1, pInt[2]) && 
-		!vol.outOfVolume(pInt[0], pInt[1] - 1, pInt[2]) && 
-		!vol.outOfVolume(pInt[0], pInt[1], pInt[2] + 1) && 
-		!vol.outOfVolume(pInt[0], pInt[1], pInt[2] -1))
-	{
-		double deltaX = vol.get(pInt[0] + 1, pInt[1], pInt[2]) - vol.get(pInt[0] - 1, pInt[1], pInt[2]);
-		double deltaY = vol.get(pInt[0], pInt[1] + 1, pInt[2]) - vol.get(pInt[0], pInt[1] - 1, pInt[2]);
-		double deltaZ = vol.get(pInt[0], pInt[1], pInt[2] + 1) - vol.get(pInt[0], pInt[1], pInt[2] - 1);
-		
-		double gradX = deltaX / 2.0f;
-		double gradY = deltaY / 2.0f;
-		double gradZ = deltaZ / 2.0f;
-
-		Eigen::Vector3f normal(gradX, gradY, gradZ);
-		normal.normalize();
-
-		return normal;
-	}
-	// TODO: change to M_INF
-	Eigen::Vector3f normal(0.0f, 0.0f, 0.0f);
-	
-}
-
-Eigen::Vector3f getInterpolatedIntersection(Volume& vol, const Eigen::Vector3f& origin, const Eigen::Vector3f& dir, double step)
-{
-	// TODO: trilinear interpolation of tValue and deltaVale
-	Eigen::Vector3f t = origin + (step - 1) * dir; // before crossing
-	Eigen::Vector3f delta = origin + step * dir;  // after crossing
-	double tValue = vol.get(t.cast<int>());
-	double deltaValue = vol.get(delta.cast<int>());
-	// Now this is trivial because step size is 1
-	// TODO: step in grid CS is correct? Or should it be WCS?
-	double deltaT = step - (step - 1);
-	double interpolatedT = (step - 1) - (deltaT * tValue / (deltaValue - tValue));
-
-	Eigen::Vector3f interpolatedV = origin + interpolatedT * dir;
-
-	return interpolatedV;
-}
-
 int main()
 {
-	const auto imageWidth = 640; 
-	const auto imageHeight = 480;
-
-	Eigen::Matrix3f intrinsics; 
-	intrinsics <<   525.0f, 0.0f, 319.5f,
-					0.0f, 525.0f, 239.5f,
-					0.0f, 0.0f, 1.0f;
-
 	// Eigen::Vector3f cameraCenter(2.0f, 2.0f, -2.0f);
 	Eigen::Vector3f cameraCenter(1.5f, 1.5f, -1.5f);
 
@@ -174,8 +121,7 @@ int main()
 
 	Eigen::Matrix3f rotation = rotationZ * rotationY * rotationX;
 
-	std::vector<Vertex> vertices,normals_vertex;
-	std::vector<Eigen::Vector3f> normals;
+	// std::vector<Eigen::Vector3f> normals;
 
 	// Init implicit surface
 	Sphere implicit = Sphere(Eigen::Vector3d(0.5, 0.5, 0.5), 0.4);
@@ -199,67 +145,15 @@ int main()
 			}
 		}
 	}
+	
 
-	Eigen::Vector3f rayOrigin = vol.worldToGrid(cameraCenter);
-	Volume vol_interpolated(Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(0.0, 0.0, 0.0), mc_res, mc_res, mc_res, 1);
-	// Traverse the image pixel by pixel
-	for (unsigned int j = 0; j < imageHeight; j += 4)  // CHANGE TO 1
-	{
-		for (unsigned int i = 0; i < imageWidth; i += 4)
-		{
-			Eigen::Vector3f rayNext(float(i), float(j), 1.0f);
-			Eigen::Vector3f rayNextCameraSpace = intrinsics.inverse() * rayNext;
-			Eigen::Vector3f rayNextWorldSpace = rotation * rayNextCameraSpace + cameraCenter;
-			Eigen::Vector3f rayNextGridSpace = vol.worldToGrid(rayNextWorldSpace);
+	std::vector<Vertex> vertices;
 
-			Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
-			rayDir.normalize();
+	Raycasting r(vol, rotation, cameraCenter);
+	
+	r.castAll();
 
-			// TODO: calculate first intersection with the volume (if exists)
-			// First, let's try step size equal to one single voxel
-			float step = 1.0f;
-			double prevDist = 0;
-			bool intersected = false;
-
-			for (unsigned int s = 0; s < MAX_MARCHING_STEPS; ++s)
-			{
-				Eigen::Vector3f p = rayOrigin + step * rayDir;
-				
-				// Think carefully if this cast is correct or not
-				if (!vol.outOfVolume(int(p[0]), int(p[1]), int(p[2])))
-				{
-					intersected = true;
-					double dist = vol.get(p.cast<int>());
-					if (prevDist > 0 && dist <=0 && s > 0)
-					{	
-						Eigen::Vector3f n = getNormal(vol, p);
-						// If normal is not a valid vector
-						if (n[0] == 0.0f && n[1] == 0.0f && n[2] == 0.0f)
-						 	break;
-						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
-						Vertex v = {
-							p,  // position
-						 	n  // normal
-						};
-						vertices.push_back(v);
-						
-						break;
-					}
-					prevDist = dist;
-					step += 1.0f;
-				}
-				else
-				{	
-					// If the ray has already intersected the volume and it is going out of boundaries
-					if (intersected)
-						break;
-					// If not, conitnue traversing until finding intersection
-					step += 1.0f;
-					continue;
-				}						
-			}	
-		}
-	}
+	vertices = r.getVertices();
 
 	writePointCloud("pointcloud.obj", vertices, true);
 
