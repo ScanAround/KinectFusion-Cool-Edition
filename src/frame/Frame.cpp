@@ -63,7 +63,8 @@ void Frame::save_off_format(const std::string & where_to_save){
     OffFile.close();
 }
 
-Frame::Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate): dib(FreeImage_ConvertToFloat(&dib)){
+Frame::Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate): 
+dib(FreeImage_ConvertToFloat(&dib)){
     
     width = FreeImage_GetWidth(this->dib);
     height = FreeImage_GetHeight(this->dib);
@@ -79,11 +80,10 @@ Frame::Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate): dib
     this -> T_gk = T_gk;
 }
 
-Frame::Frame(const std::unique_ptr<char> image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate){
-    
-    FreeImage_Initialise();
+Frame::Frame(const char * image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate): 
+dib(FreeImage_ConvertToFloat(FreeImage_Load(FreeImage_GetFileType(image_dir), image_dir))){
 
-    this -> dib = FreeImage_Load(FreeImage_GetFileType(image_dir.get()), image_dir.get());
+    FreeImage_Initialise();
 
     width = FreeImage_GetWidth(this->dib);
     height = FreeImage_GetHeight(this->dib);
@@ -91,7 +91,7 @@ Frame::Frame(const std::unique_ptr<char> image_dir, Eigen::Matrix4f T_gk, float 
     Depth_k = new float[width*height]; // have to rescale according to the data 
 
     Raw_k = (float *) FreeImage_GetBits(this->dib) ; // have to rescale according to the data 
-    
+
     K_calibration  <<  525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
                         0.0f, 525.0f / sub_sampling_rate, 239.5f/ sub_sampling_rate,
                         0.0f, 0.0f, 1.0f;
@@ -105,18 +105,6 @@ Frame::~Frame(){
     if(dib != nullptr){delete dib;}
     if(Depth_k != nullptr){delete Depth_k;}
     if(Raw_k != nullptr){delete Raw_k;}
-}
-
-Frame::Frame(const Frame & from_other): Depth_k(from_other.Depth_k){
-    if(!from_other.V_k.empty() && !from_other.M_k0.empty() && !from_other.M_k1.empty() && !from_other.N_k.empty()){
-        V_k = from_other.V_k;
-        N_k = from_other.N_k;
-        M_k0 = from_other.M_k0;
-        M_k1 = from_other.M_k1;
-    }
-    else{
-        throw std::logic_error("Either V_k vector, N_k vector, or M_k vectors are not initialized");
-    }
 }
 
 std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
