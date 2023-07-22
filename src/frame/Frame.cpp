@@ -15,7 +15,7 @@ inline double Frame::N_sigma(const float& sigma, const float &t){
 }
 
 FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, const int & filter_size){
-
+    //need to clean this shit up 
     Eigen::Matrix3f K_calibration_inverse = K_calibration.inverse();
     FIBITMAP * result;
     result = FreeImage_Allocate(width, height, 8); // monochrome image therefore 8 bytes
