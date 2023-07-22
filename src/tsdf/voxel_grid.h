@@ -4,7 +4,7 @@
 #include <vector>      // for std::vector
 #include <eigen3/Eigen/Dense> // for Eigen::Vector3d
 #include <eigen3/unsupported/Eigen/CXX11/Tensor> // for Eigen::Tensor<double, 3>
-
+#include "../frame/Frame.h"
 // TO DO: Implement the real-time version of the function above in which we process each incoming 
 // depth map as it arrives, updating the global TSDF and weights incrementally instead of 
 // remembering all of the depthmaps, poses, R_k, W_R_k etc. starting from the very first one to 
@@ -70,6 +70,9 @@ public:
                         const std::vector<Eigen::Tensor<double, 3>>& W_R_k,
                         double mu, 
                         const Eigen::Matrix3d& K);
+  
+  void updateGlobalTSDF(Frame& curr_frame,
+                        double mu);
 
   // Projective TSDF function as described in the research paper 
   // "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/ismar_2011.pdf".
@@ -78,7 +81,11 @@ public:
                                  const Eigen::Matrix4d& T_g_k, 
                                  const Eigen::MatrixXd& R_k, 
                                  double mu);
+  
 
+  Eigen::Vector2d projectiveTSDF(const Eigen::Vector3d& p, 
+                               Frame & curr_frame, 
+                               double mu);
 };
 
 }

@@ -1,4 +1,6 @@
 #include "voxel_grid.h"
+#include "../frame/Frame.h"
+#include <eigen3/Eigen/Dense>
 
 namespace kinect_fusion {
 
@@ -31,8 +33,7 @@ void VoxelGrid::initializeGrid() {
         // if a voxel's size is 0.1 meter in each dimension, and we're looking at the voxel at 
         // indices (3, 2, 1), the position of this voxel in the global frame would be 
         // (0.3, 0.2, 0.1).
-        Eigen::Vector3d halfVoxelSize = voxelSize * 0.5;
-        grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + halfVoxelSize;
+        grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
       }
     }
   }
@@ -101,6 +102,30 @@ void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps,
   }
 }
 
+void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
+                                 double mu) {
+    //removed weights (setting them to 1) + using frame class now
+    for(int x = 0; x < dimX; x++) {
+      for(int y = 0; y < dimY; y++) {
+        for(int z = 0; z < dimZ; z++) {
+          Voxel& voxel = getVoxel(x, y, z);
+          Eigen::Vector3d p(voxel.position); // The point in the global frame
+          Eigen::Vector2d tsdf_result = projectiveTSDF(p, curr_frame, mu);
+          double F_R_k_p = tsdf_result[0]; // The TSDF value from the k-th depth map
+          if(std::isnan(F_R_k_p)) continue; // Skip if F_R_k_p is null
+          // Update F and W using the provided equations
+          if(std::isnan(voxel.tsdfValue)){
+            voxel.tsdfValue = F_R_k_p;
+          }
+          else{
+            voxel.tsdfValue = (voxel.tsdfValue + F_R_k_p) / 2;
+          }
+          // voxel.weight += 1;
+        }
+      }
+    }
+}
+
 double VoxelGrid::truncatedSignedDistanceFunction(double eta, double mu) {
   if (eta >= -mu)
       return std::min(1.0, eta / mu);
@@ -147,6 +172,28 @@ Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p,
 
   // Here, we return the TSDF value and the corresponding image coordinate.
   return Eigen::Vector2d(F_R_k_p, x_nearest.norm());
+}
+
+Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p, 
+                                          Frame & curr_frame, 
+                                          double mu) {
+  
+  auto K = curr_frame.K_calibration.cast<double>();
+
+  Eigen::Vector2i x = curr_frame.vec_to_pixel(p.cast<float>());
+
+  // Compute lambda
+  double lambda = (K.inverse() * x.cast<double>().homogeneous()).norm();
+
+  // Compute eta
+  // we have to convert R_k values to meters
+  double eta = (1/lambda * (curr_frame.T_gk.block(0,3,3,1).cast<double>() - p).norm()) - curr_frame.get_R(x[0], x[1]) / 5000.0f;
+
+  // Compute TSDF value
+  double F_R_k_p = truncatedSignedDistanceFunction(eta, mu);
+
+  // Here, we return the TSDF value and the corresponding image coordinate.
+  return Eigen::Vector2d(F_R_k_p, x.norm());
 }
 
 }
