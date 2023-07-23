@@ -2,28 +2,22 @@
 #include "voxel_grid.h"
 #include <eigen3/Eigen/Dense>
 
-struct Voxel{
-  double tsdfValue;  // The TSDF value
-  double weight;  // weight for the distance
-  Eigen::Vector3d position; // The position of the voxel in the global frame
-};
 __global__
-void initialize(Voxel* grid, size_t dimX, size_t dimY, size_t dimZ){
+void initialize(kinect_fusion::Voxel* grid, size_t dimX, size_t dimY, size_t dimYZ, size_t dimZ, Eigen::Vector3d voxelSize){
   int index = threadIdx.x;
   int stride = blockDim.x;
   for (int x = index; x < dimX; x += stride){
     for(size_t y = 0; y < dimY; ++y) {
       for(size_t z = 0; z < dimZ; ++z) {
-        grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
+        grid[x*dimYZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
       }
     }
   }
 }
-
 namespace kinect_fusion {
 
 VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_) : 
-                    dimX(dimX), dimY(dimY), dimZ(dimZ), gridSize(gridSize_), 
+                    dimX(dimX), dimY(dimY), dimZ(dimZ), dimYZ(dimY*dimZ), gridSize(gridSize_), 
                     center(gridSize * 0.5) {
   // initially the grid is centered at gridSize * 0.5
   voxelSize = gridSize.cwiseQuotient(Eigen::Vector3d(dimX, dimY, dimZ));
@@ -31,30 +25,21 @@ VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d grid
 }
 
 void VoxelGrid::initializeGrid() {
-
-  // The following is a way to initialize a 3D array/vector without for loops.
-  grid = std::vector<std::vector<std::vector<Voxel>>>(dimX, 
-          std::vector<std::vector<Voxel>>(dimY, std::vector<Voxel>(dimZ)));
   
-
-  for(size_t i = 0; i < dimX; ++i) {
-    for(size_t j = 0; j < dimY; ++j) {
-      for(size_t k = 0; k < dimZ; ++k) {
-        grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
-      }
-    }
-  }
+  cudaMallocManaged((void**)&cu_grid, dimX * dimY * dimZ * sizeof(Voxel));
+  initialize <<<1,1024>>> (cu_grid, dimX, dimY, dimZ, dimYZ, gridSize);
+  cudaDeviceSynchronize();
 }
   
 void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
   // Calculate the translation vector
   Eigen::Vector3d translation = newCenter - center;
 
-  for(size_t i = 0; i < dimX; ++i) {
-    for(size_t j = 0; j < dimY; ++j) {
-      for(size_t k = 0; k < dimZ; ++k) {
+  for(size_t x = 0; x < dimX; ++x) {
+    for(size_t y = 0; y < dimY; ++y) {
+      for(size_t z = 0; z < dimZ; ++z) {
         // Apply the translation to each voxel
-        grid[i][j][k].position += translation;
+        grid[x*dimYZ + y*dimZ + z].position += translation;
       }
     }
   }
@@ -63,7 +48,7 @@ void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
 }
 
 Voxel& VoxelGrid::getVoxel(size_t x, size_t y, size_t z) {
-  return grid[x][y][z];
+  return grid[x*dimYZ + y*dimZ + z];
 }
 
 size_t VoxelGrid::getDimX() const {
@@ -202,4 +187,17 @@ Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p,
   return Eigen::Vector2d(F_R_k_p, x.norm());
 }
 
+}
+
+int main(){
+
+auto start = std::chrono::high_resolution_clock::now();
+
+Eigen::Vector3d gridSize(1,1,1); 
+unsigned int res = 128;
+kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize);
+
+auto end = std::chrono::high_resolution_clock::now();
+auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+std::cout << "time for execution: " << duration << std::endl; 
 }
