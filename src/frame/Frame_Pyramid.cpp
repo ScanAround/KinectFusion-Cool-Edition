@@ -25,7 +25,9 @@ Frame_Pyramid::Frame_Pyramid(FIBITMAP & dib){
     Depth_Pyramid[2] -> process_image(0.01, 1.0, 5);
 }
 
-Frame_Pyramid::Frame_Pyramid(const char * image_dir){
+Frame_Pyramid::Frame_Pyramid(std::string image_dir_s){
+
+    const char * image_dir = image_dir_s.c_str();
 
     T_gk << Eigen::Matrix4f::Identity();
 
