@@ -12,7 +12,7 @@ public:
 
     Frame_Pyramid(FIBITMAP & dib);
     
-    Frame_Pyramid(const char * image_dir);
+    Frame_Pyramid(std::string image_dir);
 
     ~Frame_Pyramid();
 
