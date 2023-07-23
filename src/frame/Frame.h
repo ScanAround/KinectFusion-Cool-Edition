@@ -26,7 +26,8 @@ public:
     void process_image(float sigma_r = 0.01, float sigma_s = 3.0,  int filter_size = 15, bool apply_bilateral = true);
 
     void save_off_format(const std::string & where_to_save);
-
+    
+    void save_G_off_format(const std::string & where_to_save);
     // takes a vector in the global frame and backprojects it to camera pixels
     Eigen::Vector2i vec_to_pixel(const Eigen::Vector3f& vec){
         Eigen::Matrix3f rotation = T_gk.inverse().block(0,0,3,3);

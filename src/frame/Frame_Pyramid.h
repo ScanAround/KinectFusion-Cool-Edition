@@ -18,7 +18,8 @@ public:
 
     Eigen::Matrix4f T_gk;
 
-    void set_T_gk(Eigen::Matrix4f& T_gk){
+    void set_T_gk(Eigen::Matrix4f T_gk){
+        this -> T_gk = T_gk;
         Depth_Pyramid[0] -> T_gk = T_gk;
         Depth_Pyramid[1] -> T_gk = T_gk;
         Depth_Pyramid[2] -> T_gk = T_gk;
