@@ -16,8 +16,6 @@ void ICP::correspondence_finder(Eigen::Matrix4f T_curr_frame, Frame & curr_frame
 
     curr_frame.apply_transform(T_curr_frame, curr_V_k_transformed, curr_N_k_transformed); //transforming current frame's V_k -> V_tk according to previous frame
 
-    std::cout << "Finding Correspondences" << std::endl;
-
     for(int i = 0; i < curr_V_k_transformed.size(); i++){
         if(!std::isnan(curr_V_k_transformed[i][0])){
             Eigen::Vector2i pixel = prev_frame.vec_to_pixel(curr_V_k_transformed[i]);
@@ -30,7 +28,7 @@ void ICP::correspondence_finder(Eigen::Matrix4f T_curr_frame, Frame & curr_frame
                     // check if distances between corresponding vectors are below threshold
                     if((curr_V_k_transformed[i] - prev_frame.V_gk[idx_in_prev]).norm() <= this->distance_threshold){
                         // check if distances between corresponding angles are below threshold
-                        if((curr_N_k_transformed[i].dot(prev_frame.N_gk[idx_in_prev])) <= this->angle_threshold){
+                        if((curr_N_k_transformed[i].dot(prev_frame.N_gk[idx_in_prev])) >= this->angle_threshold){
                             matches.push_back(std::make_pair(i, idx_in_prev));
                         }
                     }
@@ -111,13 +109,15 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     }
 
 Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
-
+    std::cout << "Registering 3rd Frame Pyramid Level" << std::endl;
     Eigen::Matrix4f T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[2], *prev_frame_pyramid -> Depth_Pyramid[2], 4, cuda);
     curr_frame_pyramid -> set_T_gk(T);
     
+    std::cout << "Registering 2nd Frame Pyramid Level" << std::endl;
     T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[1], *prev_frame_pyramid -> Depth_Pyramid[1], 5, cuda);
     curr_frame_pyramid -> set_T_gk(T);
     
+    std::cout << "Registering 1st Frame Pyramid Level" << std::endl;
     T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[0], *prev_frame_pyramid -> Depth_Pyramid[0], 10, cuda);
     curr_frame_pyramid -> set_T_gk(T);
 
