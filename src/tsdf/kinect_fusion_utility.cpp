@@ -77,47 +77,47 @@ Eigen::Matrix4d utility::getPoseFromTimestamp(const std::string& depthImageFilen
 }
 
 // auto [avgMinDepth, avgMaxDepth, avgAvgDepth] = getDepthRange(directory);
-std::tuple<double, double, double> utility::getDepthRange(const std::string& directory) {
-    namespace fs = std::filesystem;
-
-    std::vector<float> minDepths, maxDepths, avgDepths;
-    for (const auto & entry : fs::directory_iterator(directory)) {
-        if (entry.path().extension() == ".png") {
-            // Load the depth image
-            cv::Mat depthImage = cv::imread(entry.path(), cv::IMREAD_UNCHANGED);
-
-            // Convert to floating point depth in meters
-            depthImage.convertTo(depthImage, CV_32F);
-            depthImage = depthImage / 5000.0;
-
-            // Mask out zero values (missing data)
-            cv::Mat mask = depthImage > 0;
-            cv::Mat maskedDepthImage;
-            depthImage.copyTo(maskedDepthImage, mask);
-
-            if (cv::countNonZero(mask) > 0) { // Check that there is data
-                // Compute minimum and maximum depth
-                double minDepth, maxDepth, avgDepth;
-                cv::minMaxLoc(maskedDepthImage, &minDepth, &maxDepth, 0, 0, mask);
-                avgDepth = cv::mean(maskedDepthImage, mask)[0];
-
-                minDepths.push_back(minDepth);
-                maxDepths.push_back(maxDepth);
-                avgDepths.push_back(avgDepth);
-            }
-        }
-    }
-
-    // Compute average minimum, maximum and average depth
-    double avgMinDepth = std::accumulate(minDepths.begin(), minDepths.end(), 0.0) / 
-                         minDepths.size();
-    double avgMaxDepth = std::accumulate(maxDepths.begin(), maxDepths.end(), 0.0) / 
-                         maxDepths.size();
-    double avgAvgDepth = std::accumulate(avgDepths.begin(), avgDepths.end(), 0.0) / 
-                         avgDepths.size();
-
-    return std::make_tuple(avgMinDepth, avgMaxDepth, avgAvgDepth);
-}
+// std::tuple<double, double, double> utility::getDepthRange(const std::string& directory) {
+//     namespace fs = std::filesystem;
+//
+//     std::vector<float> minDepths, maxDepths, avgDepths;
+//     for (const auto & entry : fs::directory_iterator(directory)) {
+//         if (entry.path().extension() == ".png") {
+//             // Load the depth image
+//             cv::Mat depthImage = cv::imread(entry.path(), cv::IMREAD_UNCHANGED);
+//
+//             // Convert to floating point depth in meters
+//             depthImage.convertTo(depthImage, CV_32F);
+//             depthImage = depthImage / 5000.0;
+//
+//             // Mask out zero values (missing data)
+//             cv::Mat mask = depthImage > 0;
+//             cv::Mat maskedDepthImage;
+//             depthImage.copyTo(maskedDepthImage, mask);
+//
+//             if (cv::countNonZero(mask) > 0) { // Check that there is data
+//                 // Compute minimum and maximum depth
+//                 double minDepth, maxDepth, avgDepth;
+//                 cv::minMaxLoc(maskedDepthImage, &minDepth, &maxDepth, 0, 0, mask);
+//                 avgDepth = cv::mean(maskedDepthImage, mask)[0];
+//
+//                 minDepths.push_back(minDepth);
+//                 maxDepths.push_back(maxDepth);
+//                 avgDepths.push_back(avgDepth);
+//             }
+//         }
+//     }
+//
+//     // Compute average minimum, maximum and average depth
+//     double avgMinDepth = std::accumulate(minDepths.begin(), minDepths.end(), 0.0) / 
+//                          minDepths.size();
+//     double avgMaxDepth = std::accumulate(maxDepths.begin(), maxDepths.end(), 0.0) / 
+//                          maxDepths.size();
+//     double avgAvgDepth = std::accumulate(avgDepths.begin(), avgDepths.end(), 0.0) / 
+//                          avgDepths.size();
+//
+//     return std::make_tuple(avgMinDepth, avgMaxDepth, avgAvgDepth);
+// }
 
 std::vector<std::string> utility::getPngFilesInDirectory(const std::string& directoryPath) {
     DIR* dir;
