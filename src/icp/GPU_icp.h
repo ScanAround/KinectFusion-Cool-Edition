@@ -8,14 +8,12 @@ class ICP{
 
 public:
 
-    ICP(Frame_Pyramid& F_k, const Frame_Pyramid& F_k__1, const float distance_threshold, const float angle_threshold): 
-    curr_frame_pyramid(&F_k), 
-    prev_frame_pyramid(&F_k__1), 
+    ICP(Frame_Pyramid& curr_frame, const Frame_Pyramid& prev_frame, const float distance_threshold, const float angle_threshold): 
+    curr_frame_pyramid(&curr_frame), 
+    prev_frame_pyramid(&prev_frame), 
     distance_threshold(distance_threshold),
     angle_threshold(angle_threshold){};
     
-    ~ICP();
-
     Eigen::Matrix4f point_to_plane_solver(Frame & curr_frame, Frame & prev_frame, int iterations, bool cuda);
 
     Eigen::Matrix4f pyramid_ICP(bool cuda);
