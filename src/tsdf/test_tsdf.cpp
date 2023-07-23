@@ -1,5 +1,4 @@
 #include "voxel_grid.h"
-#include "kinect_fusion_utility.h"
 #include "../mesher/Marching_Cubes.h"
 #include <algorithm>
 
@@ -47,9 +46,6 @@ std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
 double mu = 0.02;
 
 grid.updateGlobalTSDF(*frame1, mu);
-
-// Write the resulting TSDF to a file
-kinect_fusion::utility::writeTSDFToFile("global_fusion_result.txt", grid);
 
 mesher -> Mesher(grid, 0, "mesh2.off");
 }
