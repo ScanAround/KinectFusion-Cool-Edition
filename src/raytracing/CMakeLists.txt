@@ -21,6 +21,8 @@ set(HEADERS
 set(SOURCES
 	main.cpp
 	Volume.cpp
+	Raycasting.cpp
+	Ray.cpp
 )
 
 add_executable(raycasting ${HEADERS} ${SOURCES})

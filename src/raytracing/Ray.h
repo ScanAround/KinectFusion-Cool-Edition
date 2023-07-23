@@ -1,17 +1,23 @@
 #ifndef RAY_H
 #define RAY_H
 
-class Ray :
+#include <Eigen/Dense>
+
+class Ray
 {
 public:
-	Ray()
-	{
-		a = 0;
-	}
+	Ray(const Eigen::Vector3f _origin, const Eigen::Vector3f _dir);
+	
+	Eigen::Vector3f at(const double t) const;
+
+	Eigen::Vector3f getOrigin() const;
+
+	Eigen::Vector3f getDirection() const;
 
 private:
-	double a;
-}
+	const Eigen::Vector3f origin;
+	const Eigen::Vector3f dir;
+};
 
 
 #endif  // RAY_H
