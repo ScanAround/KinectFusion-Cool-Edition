@@ -3396,3 +3396,9 @@ build/CMakeFiles/KinectFusionLib.dir/src/tsdf/voxel.cpp.o
 build/CMakeFiles/KinectFusionLib.dir/src/tsdf/voxel.cpp.o.d
 outputs/meshes/mesh_1.off
 outputs/point_clouds/G.obj
+outputs/meshes/mesh0.off
+outputs/meshes/mesh1.off
+outputs/point_clouds/pc_G0.obj
+outputs/point_clouds/pc_G1.obj
+outputs/point_clouds/pc0.obj
+outputs/point_clouds/pc1.obj
