@@ -127,7 +127,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
 
 double VoxelGrid::truncatedSignedDistanceFunction(double eta, double mu) {
   if (eta >= -mu)
-      return std::min(1.0, eta / mu);
+      return std::min(1.0, -eta / mu);
   else
       return std::numeric_limits<double>::quiet_NaN(); // NaN is used to represent "no data"
 }
