@@ -1,6 +1,8 @@
 #include "../frame/Frame.h"
 #include "voxel_grid.h"
+#include "../mesher/Marching_Cubes.h"
 #include <eigen3/Eigen/Dense>
+#define CU_NAN              __longlong_as_double(0xfff8000000000000ULL)
 
 __global__
 void initialize(kinect_fusion::Voxel* grid, size_t dimX, size_t dimY, size_t dimYZ, size_t dimZ, Eigen::Vector3d voxelSize){
@@ -14,6 +16,86 @@ void initialize(kinect_fusion::Voxel* grid, size_t dimX, size_t dimY, size_t dim
     }
   }
 }
+__device__
+double TSDF(double eta, double mu) {
+  if (eta >= -mu)
+      return min(1.0, -eta / mu);
+  else
+      return CU_NAN; // NaN is used to represent "no data"
+}
+__device__
+Eigen::Vector2i cu_vec_to_pixel(const Eigen::Vector3d& vec, Eigen::Matrix4d T_gk, Eigen::Matrix3d K, int width, int height){
+        Eigen::Matrix3d rotation = T_gk.inverse().block(0,0,3,3);
+        Eigen::Vector3d translation = T_gk.inverse().block(0,3,3,1);
+        
+        Eigen::Vector3d vec_camera_frame = rotation * vec + translation;
+        
+        Eigen::Vector3d u_dot = (K * vec_camera_frame) / vec_camera_frame[2];
+
+        Eigen::Vector2i u;
+        if(u_dot[0] >= 0 
+        && u_dot[0] <= width 
+        && u_dot[1] >= 0 
+        && u_dot[1] <= height){
+            // making sure u is within the image we have 
+            u << int(u_dot[0]), int(u_dot[1]);
+        }
+        else{
+            u << 0,0 ;
+        }
+        return u;
+}
+__device__
+Eigen::Vector2d proj_TSDF(const Eigen::Vector3d& p, 
+                          Frame& curr_frame, 
+                          double mu,
+                          float * R) {
+  
+  auto K = curr_frame.K_calibration.cast<double>();
+  auto T_gk = curr_frame.T_gk.cast<double>();
+  auto width = curr_frame.width;
+  auto height = curr_frame.height;
+
+  Eigen::Vector2i x = cu_vec_to_pixel(p, T_gk, K, width, height);
+
+  // Compute lambda
+  double lambda = (K.inverse() * x.cast<double>().homogeneous()).norm();
+
+  // Compute eta
+  // we have to convert R_k values to meters
+  double eta = (1/lambda * (curr_frame.T_gk.block(0,3,3,1).cast<double>() - p).norm()) - R[x[1]*width + x[0]] * 255.0f * 255.0f / 5000.0f;
+
+  // Compute TSDF value
+  double F_R_k_p = TSDF(eta, mu);
+
+  // Here, we return the TSDF value and the corresponding image coordinate.
+  return Eigen::Vector2d(F_R_k_p, x.norm());
+}
+
+__global__
+void update(kinect_fusion::Voxel* grid, Frame& curr_frame, double mu, size_t dimX, size_t dimY, size_t dimYZ, size_t dimZ, float * R){
+int index = threadIdx.x;
+int stride = blockDim.x;
+for(int x = index; x < dimX; x+=stride) {
+      for(int y = 0; y < dimY; y++) {
+        for(int z = 0; z < dimZ; z++) {
+          kinect_fusion::Voxel& voxel = grid[x*dimYZ + y*dimZ + z];
+          Eigen::Vector3d p(voxel.position); // The point in the global frame
+          Eigen::Vector2d tsdf_result = proj_TSDF(p, curr_frame, mu, R);
+          double F_R_k_p = tsdf_result[0]; // The TSDF value from the k-th depth map
+          if(std::isnan(F_R_k_p)) continue; // Skip if F_R_k_p is null
+          // Update F and W using the provided equations
+          if(std::isnan(voxel.tsdfValue)){
+            voxel.tsdfValue = F_R_k_p;
+          }
+          else{
+            voxel.tsdfValue = (voxel.tsdfValue + F_R_k_p) / 2;
+          }
+        }
+      }
+    }
+}
+
 namespace kinect_fusion {
 
 VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_) : 
@@ -27,24 +109,8 @@ VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d grid
 void VoxelGrid::initializeGrid() {
   
   cudaMallocManaged((void**)&cu_grid, dimX * dimY * dimZ * sizeof(Voxel));
-  initialize <<<1,1024>>> (cu_grid, dimX, dimY, dimZ, dimYZ, gridSize);
+  initialize <<<1,512>>> (cu_grid, dimX, dimY, dimZ, dimYZ, gridSize);
   cudaDeviceSynchronize();
-}
-  
-void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
-  // Calculate the translation vector
-  Eigen::Vector3d translation = newCenter - center;
-
-  for(size_t x = 0; x < dimX; ++x) {
-    for(size_t y = 0; y < dimY; ++y) {
-      for(size_t z = 0; z < dimZ; ++z) {
-        // Apply the translation to each voxel
-        grid[x*dimYZ + y*dimZ + z].position += translation;
-      }
-    }
-  }
-
-  center = newCenter; // Update the current center
 }
 
 Voxel& VoxelGrid::getVoxel(size_t x, size_t y, size_t z) {
@@ -63,141 +129,71 @@ size_t VoxelGrid::getDimZ() const {
   return dimZ;
 }
 
-void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps, 
-                                 const std::vector<Eigen::Matrix4d>& poses,
-                                 const std::vector<Eigen::Tensor<double, 3>>& W_R_k,
-                                 double mu, 
-                                 const Eigen::Matrix3d& K) {
-  // For each depth map
-  for(int k = 0; k < depthMaps.size(); k++) {
-    // For each cell in the TSDF grid
-    for(int x = 0; x < dimX; x++) {
-      for(int y = 0; y < dimY; y++) {
-        for(int z = 0; z < dimZ; z++) {
-          Voxel& voxel = getVoxel(x, y, z);
-          Eigen::Vector3d p(voxel.position); // The point in the global frame
-          Eigen::Vector2d tsdf_result = projectiveTSDF(p, K, poses[k], depthMaps[k], mu);
-          double F_R_k_p = tsdf_result[0]; // The TSDF value from the k-th depth map
-          double W_R_k_p = W_R_k[k](x, y, z); // The weight from the k-th depth map
-          if(std::isnan(F_R_k_p)) continue; // Skip if F_R_k_p is null
-          // Update F and W using the provided equations
-          if(std::isnan(voxel.tsdfValue) && std::isnan(voxel.weight)){
-            voxel.tsdfValue = (W_R_k_p * F_R_k_p) / (W_R_k_p);
-          }
-          else{
-            voxel.tsdfValue = (voxel.weight * voxel.tsdfValue + W_R_k_p * F_R_k_p) / (voxel.weight + W_R_k_p);
-          }
-          voxel.weight += W_R_k_p;
-        }
-      }
-    }
-  }
-}
-
 void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
                                  double mu) {
-    //removed weights (setting them to 1) + using frame class now
-    for(int x = 0; x < dimX; x++) {
-      for(int y = 0; y < dimY; y++) {
-        for(int z = 0; z < dimZ; z++) {
-          Voxel& voxel = getVoxel(x, y, z);
-          Eigen::Vector3d p(voxel.position); // The point in the global frame
-          Eigen::Vector2d tsdf_result = projectiveTSDF(p, curr_frame, mu);
-          double F_R_k_p = tsdf_result[0]; // The TSDF value from the k-th depth map
-          if(std::isnan(F_R_k_p)) continue; // Skip if F_R_k_p is null
-          // Update F and W using the provided equations
-          if(std::isnan(voxel.tsdfValue)){
-            voxel.tsdfValue = F_R_k_p;
-          }
-          else{
-            voxel.tsdfValue = (voxel.tsdfValue + F_R_k_p) / 2;
-          }
-        }
-      }
-    }
-}
 
-double VoxelGrid::truncatedSignedDistanceFunction(double eta, double mu) {
-  if (eta >= -mu)
-      return std::min(1.0, -eta / mu);
-  else
-      return std::numeric_limits<double>::quiet_NaN(); // NaN is used to represent "no data"
-}
+  float * R;
+  cudaMalloc((void**)&R, sizeof(float) * curr_frame.get_R_size());
+  cudaMemcpy(R, &curr_frame.Raw_k, sizeof(float) * curr_frame.get_R_size(), cudaMemcpyHostToDevice);
 
-Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p, 
-                                          const Eigen::Matrix3d& K, 
-                                          const Eigen::Matrix4d& T_g_k, 
-                                          const Eigen::MatrixXd& R_k, 
-                                          double mu) {
-
-  // Transform point p from global frame to the camera coordinate frame at time k
-  Eigen::Vector4d p_camera_homogeneous = T_g_k.inverse() * p.homogeneous();
-
-  // p_camera should be a 3D point
-  Eigen::Vector3d p_camera = p_camera_homogeneous.head<3>() / p_camera_homogeneous(3);
-
-  // Transform points on the sensor plane into image pixels
-  Eigen::Vector3d p_pixel = K * p_camera;
-
-  // Normalize to get image coordinates
-  Eigen::Vector2d x = (p_pixel.head<2>() / p_pixel(2));
-
-  // Use floor function to get nearest integer pixel coordinates
-  Eigen::Vector2i x_nearest = x.cast<int>();
-
-  // Check if coordinates are within the valid range
-  if(x_nearest.x() < 0 || x_nearest.x() >= 640 || x_nearest.y() < 0 || x_nearest.y() >= 480) {
-    // If not, return NaN for the TSDF value and the pixel coordinate's norm.
-    return Eigen::Vector2d(std::numeric_limits<double>::quiet_NaN(), x_nearest.norm());
-  }
-
-  // Compute lambda
-  double lambda = (K.inverse() * x.homogeneous()).norm();
-
-  // Compute eta
-  double eta = 1/lambda * p_camera.norm() - R_k(x_nearest.y(), x_nearest.x());
-  // double eta = 1/lambda * (T_g_k.block(0,3,3,1) - p_camera).norm() - R_k(x_nearest.y(), x_nearest.x());
-
-  // Compute TSDF value
-  double F_R_k_p = truncatedSignedDistanceFunction(eta, mu);
-
-  // Here, we return the TSDF value and the corresponding image coordinate.
-  return Eigen::Vector2d(F_R_k_p, x_nearest.norm());
-}
-
-Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p, 
-                                          Frame & curr_frame, 
-                                          double mu) {
+  update <<<1,512>>> (cu_grid, curr_frame, mu, dimX, dimY, dimYZ, dimZ, R);
+  cudaDeviceSynchronize();
   
-  auto K = curr_frame.K_calibration.cast<double>();
-
-  Eigen::Vector2i x = curr_frame.vec_to_pixel(p.cast<float>());
-
-  // Compute lambda
-  double lambda = (K.inverse() * x.cast<double>().homogeneous()).norm();
-
-  // Compute eta
-  // we have to convert R_k values to meters
-  double eta = (1/lambda * (curr_frame.T_gk.block(0,3,3,1).cast<double>() - p).norm()) - curr_frame.get_R(x[0], x[1]) / 5000.0f;
-
-  // Compute TSDF value
-  double F_R_k_p = truncatedSignedDistanceFunction(eta, mu);
-
-  // Here, we return the TSDF value and the corresponding image coordinate.
-  return Eigen::Vector2d(F_R_k_p, x.norm());
+  cudaMemcpy(grid.data(), &cu_grid, dimX * dimY * dimZ * sizeof(Voxel), cudaMemcpyDeviceToHost);
+  // cudaFree(cu_grid);
+  // cudaFree(R);
 }
 
 }
 
 int main(){
 
+
+double tx = 1.3434, ty = 0.6271, tz = 1.6606;
+double qx = 0.6583, qy = 0.6112, qz = -0.2938, qw = -0.3266;
+
+// Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
+Eigen::Matrix4d pose;
+Eigen::Vector3d trans(tx, ty, tz);
+Eigen::Quaterniond quat(qw, qx, qy, qz);
+
+pose.topLeftCorner<3, 3>() = quat.toRotationMatrix();
+pose.topRightCorner<3, 1>() = trans;
+pose(3,0) = pose(3,1) = pose(3,2) = 0.0;
+pose(3,3) = 1.0;
+
+auto pose_f = pose.cast<float>();
+
+const char* img_loc = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png"; 
+
+Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
+
+frame1 -> process_image();
+
+std::vector<Eigen::Vector3f> V_tk;
+
+frame1 -> apply_transform(pose_f, V_tk);
+
+std::ofstream OffFile("G_Frame1.obj");
+for(auto V : V_tk){
+    OffFile << "v " << V[0] << " " << V[1] << " " << V[2] << std::endl; 
+}
+
 auto start = std::chrono::high_resolution_clock::now();
 
 Eigen::Vector3d gridSize(1,1,1); 
 unsigned int res = 128;
+
 kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize);
 
+double mu = 0.02;
+
+grid.updateGlobalTSDF(*frame1, mu);
+
 auto end = std::chrono::high_resolution_clock::now();
-auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
 std::cout << "time for execution: " << duration << std::endl; 
+
+Marching_Cubes::Mesher(grid, 0, "mesh2.off");
 }
