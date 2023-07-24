@@ -39,7 +39,7 @@ Eigen::Vector2i vec_to_pixel(const Eigen::Vector3d vec, Eigen::Matrix3d R_i, Eig
   return u;
 }
 __device__
-double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p, Eigen::Matrix3d R_i, Eigen::Vector3d t_i, float *R, int width, int height, double mu){
+double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p, Eigen::Matrix3d R_i, Eigen::Vector3d t_i, Eigen::Vector3d t, float *R, int width, int height, double mu){
   Eigen::Vector2i x = vec_to_pixel(p, R_i, t_i, K, width, height);
 
   // Compute lambda
@@ -47,7 +47,7 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
 
   // Compute eta
   // we have to convert R_k values to meters
-  double eta = (1.0 / lambda) * (t_i - p).norm() - static_cast<double>(R[x[1]*width + x[0]]) *255.0* 255.0 / 5000.0;
+  double eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]) *255.0f* 255.0f) / 5000.0;
 
   // Compute TSDF value
   double F_R_k_p = TSDF(eta, mu);
@@ -58,7 +58,7 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
 __global__
 void update(kinect_fusion::Voxel *cu_grid,
             int dimX, int dimY, int dimZ, int dimYZ,
-            Eigen::Vector3d voxelSize, Eigen::Matrix3d K, Eigen::Matrix3d K_i, Eigen::Matrix3d R_i, Eigen::Vector3d t_i, 
+            Eigen::Vector3d voxelSize, Eigen::Matrix3d K, Eigen::Matrix3d K_i, Eigen::Matrix3d R_i, Eigen::Vector3d t_i, Eigen::Vector3d t, 
             float *R, int width, int height, double mu, 
             dim3 thread_nums){
   int id_x = threadIdx.x + blockIdx.x * thread_nums.x;
@@ -67,7 +67,7 @@ void update(kinect_fusion::Voxel *cu_grid,
   if(id_x < dimX && id_y < dimY && id_z < dimZ){
     kinect_fusion::Voxel& voxel = cu_grid[id_x*dimYZ + id_y*dimZ + id_z];
     Eigen::Vector3d p(voxel.position); // The point in the global frame
-    double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, R, width, height, mu);
+    double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, t, R, width, height, mu);
     if(std::isnan(voxel.tsdfValue)){
       voxel.tsdfValue = F_R;
     }
@@ -138,8 +138,9 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
   auto T_gk = curr_frame.T_gk.cast<double>();
   auto R_i = T_gk.inverse().block(0,0,3,3);
   auto t_i = T_gk.inverse().block(0,3,3,1);
+  auto t = T_gk.block(0,3,3,1);
   update <<<block_nums,thread_nums>>> (cu_grid, dimX, dimY, dimZ, dimYZ, 
-                                       voxelSize, K , K_i, R_i, t_i,
+                                       voxelSize, K , K_i, R_i, t_i, t,
                                        R, curr_frame.width, curr_frame.height, mu, thread_nums);
   cudaDeviceSynchronize();
   
@@ -176,11 +177,11 @@ Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
 
 frame1 -> process_image();
 
-frame1 -> save_G_off_format("G.off");
-frame1 -> save_off_format("original.off");
+frame1 -> save_G_off_format("G.obj");
+frame1 -> save_off_format("original.obj");
 
 Eigen::Vector3d gridSize(4,4,4); 
-unsigned int res = 128;
+unsigned int res = 256;
 
 kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize);
 double mu = 0.02;
@@ -190,7 +191,7 @@ grid.updateGlobalTSDF(*frame1, mu);
 auto end = std::chrono::high_resolution_clock::now();
 auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-kinect_fusion::utility::writeTSDFToFile("TSDF.txt", grid);
+// kinect_fusion::utility::writeTSDFToFile("TSDF.txt", grid);
 Marching_Cubes::Mesher(grid, 0, "mesh2.off");
 
 std::cout << "time for execution: " << duration << std::endl; 
