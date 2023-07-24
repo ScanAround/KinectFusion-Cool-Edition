@@ -1,0 +1,2 @@
+/usr/bin/ar qc libKinectFusionLib.a CMakeFiles/KinectFusionLib.dir/voxel_grid.cpp.o CMakeFiles/KinectFusionLib.dir/voxel.cpp.o CMakeFiles/KinectFusionLib.dir/kinect_fusion_utility.cpp.o CMakeFiles/KinectFusionLib.dir/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/src/frame/Frame.cpp.o
+/usr/bin/ranlib libKinectFusionLib.a

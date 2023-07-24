@@ -1,0 +1,4 @@
+/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/src/tsdf/build/CMakeFiles/KinectFusionLib.dir
+/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/src/tsdf/build/CMakeFiles/KinectFusionApp.dir
+/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/src/tsdf/build/CMakeFiles/edit_cache.dir
+/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/src/tsdf/build/CMakeFiles/rebuild_cache.dir
