@@ -176,15 +176,8 @@ Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
 
 frame1 -> process_image();
 
-std::vector<Eigen::Vector3f> V_tk;
-
-frame1 -> apply_transform(pose_f, V_tk);
-
-std::ofstream OffFile("G_Frame1.obj");
-for(auto V : V_tk){
-    OffFile << "v " << V[0] << " " << V[1] << " " << V[2] << std::endl; 
-}
-
+frame1 -> save_G_off_format("G.off");
+frame1 -> save_off_format("original.off");
 
 Eigen::Vector3d gridSize(4,4,4); 
 unsigned int res = 128;
