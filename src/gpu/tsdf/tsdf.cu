@@ -15,12 +15,8 @@ void initialize(kinect_fusion::Voxel *cu_grid, int dimX, int dimY, int dimZ, int
 }
 __device__
 double TSDF(double eta, double mu){
-  if (eta >= -mu){
-      return min(1.0, -eta / mu);
-      }
-  else{
-      printf("in false eta \n");
-      return nan("1");}
+  if (eta >= -mu) return min(1.0, -eta / mu);
+  return nan("1");
 }
 
 __device__ 
@@ -51,9 +47,7 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
 
   // Compute eta
   // we have to convert R_k values to meters
-  double eta = (1.0 / lambda);
-  eta *= (t_i - p).norm();
-  eta -= static_cast<double>(R[x[1]*width + x[0]]) / 5000.0;
+  double eta = (1.0 / lambda) * (t_i - p).norm() - static_cast<double>(R[x[1]*width + x[0]]) *255.0* 255.0 / 5000.0;
 
   // Compute TSDF value
   double F_R_k_p = TSDF(eta, mu);
@@ -73,12 +67,12 @@ void update(kinect_fusion::Voxel *cu_grid,
   if(id_x < dimX && id_y < dimY && id_z < dimZ){
     kinect_fusion::Voxel& voxel = cu_grid[id_x*dimYZ + id_y*dimZ + id_z];
     Eigen::Vector3d p(voxel.position); // The point in the global frame
-    double F_R_k_p = projectiveTSDF(K, K_i, p, R_i, t_i, R, width, height, mu);
-    if(voxel.tsdfValue == nan("1")){
-      voxel.tsdfValue = F_R_k_p;
+    double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, R, width, height, mu);
+    if(std::isnan(voxel.tsdfValue)){
+      voxel.tsdfValue = F_R;
     }
     else{
-      voxel.tsdfValue = (voxel.tsdfValue + F_R_k_p) / 2;
+      voxel.tsdfValue = (voxel.tsdfValue + F_R) / 2;
     }
   }
 }
@@ -192,7 +186,7 @@ for(auto V : V_tk){
 }
 
 
-Eigen::Vector3d gridSize(1,1,1); 
+Eigen::Vector3d gridSize(4,4,4); 
 unsigned int res = 128;
 
 kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize);
@@ -204,7 +198,7 @@ auto end = std::chrono::high_resolution_clock::now();
 auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
 kinect_fusion::utility::writeTSDFToFile("TSDF.txt", grid);
-// Marching_Cubes::Mesher(grid, 0, "mesh2.off");
+Marching_Cubes::Mesher(grid, 0, "mesh2.off");
 
 std::cout << "time for execution: " << duration << std::endl; 
 }
