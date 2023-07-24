@@ -3402,3 +3402,7 @@ outputs/point_clouds/pc_G0.obj
 outputs/point_clouds/pc_G1.obj
 outputs/point_clouds/pc0.obj
 outputs/point_clouds/pc1.obj
+src/tsdf/G_Frame1.obj
+src/tsdf/mesh2.off
+src/tsdf/tsdf_gpu_debug
+src/tsdf/tsdf_gpu_debug
