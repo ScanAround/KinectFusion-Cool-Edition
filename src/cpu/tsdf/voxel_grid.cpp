@@ -26,9 +26,6 @@ void VoxelGrid::initializeGrid() {
   for(size_t x = 0; x < dimX; ++x) {
     for(size_t y = 0; y < dimY; ++y) {
       for(size_t z = 0; z < dimZ; ++z) {
-  for(size_t x = 0; x < dimX; ++x) {
-    for(size_t y = 0; y < dimY; ++y) {
-      for(size_t z = 0; z < dimZ; ++z) {
         // The voxel position is calculated by simply multiplying the voxel size by the 
         // corresponding index, which gives the voxel's position in the global frame. The position 
         // of each voxel is computed as the product of the voxel's index and the size of each 
