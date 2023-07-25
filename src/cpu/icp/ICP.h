@@ -14,6 +14,7 @@ public:
     distance_threshold(distance_threshold),
     angle_threshold(angle_threshold){};
     
+    
     Eigen::Matrix4f point_to_plane_solver(Frame & curr_frame, Frame & prev_frame, int iterations, bool cuda);
 
     Eigen::Matrix4f pyramid_ICP(bool cuda);

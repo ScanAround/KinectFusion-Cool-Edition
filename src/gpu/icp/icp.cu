@@ -4,8 +4,8 @@
 #include <fstream>
 #include <FreeImage.h>
 #include <vector>
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
 #ifndef CUDACC
 #define CUDACC
 #endif

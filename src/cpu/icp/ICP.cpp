@@ -1,4 +1,4 @@
-#include "GPU_icp.h"
+#include "ICP.h"
 #include "../frame/Frame_Pyramid.h"
 #include <iostream>
 #include <fstream>
