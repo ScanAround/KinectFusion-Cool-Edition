@@ -85,7 +85,7 @@ void Frame::save_G_off_format(const std::string & where_to_save)
     }
 
 Frame::Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate): 
-dib(FreeImage_ConvertToFloat(&dib)){
+dib(FreeImage_ConvertToFloat(&dib)), T_gk(T_gk){
     
     width = FreeImage_GetWidth(this->dib);
     height = FreeImage_GetHeight(this->dib);
@@ -97,8 +97,6 @@ dib(FreeImage_ConvertToFloat(&dib)){
     K_calibration  <<  525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
                         0.0f, 525.0f / sub_sampling_rate, 239.5f/ sub_sampling_rate,
                         0.0f, 0.0f, 1.0f;
-
-    this -> T_gk = T_gk;
 }
 
 Frame::Frame(const char * image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate): 
@@ -120,6 +118,15 @@ dib(FreeImage_ConvertToFloat(FreeImage_Load(FreeImage_GetFileType(image_dir), im
     this -> T_gk = T_gk;
 
     FreeImage_DeInitialise();
+}
+
+Frame::Frame(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width, int height):
+width(width), height(height), T_gk(T_gk), V_gk(V_gks), N_gk(N_gks){
+
+    K_calibration  <<  525.0f , 0.0f, 319.5f,
+                        0.0f, 525.0f, 239.5f,
+                        0.0f, 0.0f, 1.0f;
+    
 }
 
 Frame::~Frame(){

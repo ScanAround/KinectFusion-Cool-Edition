@@ -47,6 +47,16 @@ Frame_Pyramid::Frame_Pyramid(std::string image_dir_s){
     Depth_Pyramid[2] -> process_image(0.01, 1.0, 5);
 }
 
+Frame_Pyramid::Frame_Pyramid(Frame & raytracing_frame){
+
+    T_gk << raytracing_frame.T_gk;
+
+    Depth_Pyramid[0] = &raytracing_frame;
+    Depth_Pyramid[1] = &raytracing_frame;
+    Depth_Pyramid[2] = &raytracing_frame;
+    
+}
+
 Frame_Pyramid::~Frame_Pyramid(){
     delete Depth_Pyramid[0];
     delete Depth_Pyramid[1];

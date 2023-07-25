@@ -14,6 +14,8 @@ public:
     
     Frame_Pyramid(std::string image_dir);
 
+    Frame_Pyramid::Frame_Pyramid(Frame & raytracing_frame);
+
     ~Frame_Pyramid();
 
     Eigen::Matrix4f T_gk;
