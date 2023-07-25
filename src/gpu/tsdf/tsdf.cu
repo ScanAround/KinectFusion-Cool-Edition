@@ -5,12 +5,12 @@
 #include <eigen3/Eigen/Dense>
 
 __global__ 
-void initialize(kinect_fusion::Voxel *cu_grid, int dimX, int dimY, int dimZ, int dimYZ, Eigen::Vector3d voxelSize, dim3 thread_nums){
+void initialize(kinect_fusion::Voxel *cu_grid, int dimX, int dimY, int dimZ, int dimYZ, Eigen::Vector3d voxelSize, dim3 thread_nums, Eigen::Vector3d center){
   int id_x = threadIdx.x + blockIdx.x * thread_nums.x;
   int id_y = threadIdx.y + blockIdx.y * thread_nums.y;
   int id_z = threadIdx.z + blockIdx.z * thread_nums.z;
   if(id_x < dimX && id_y < dimY && id_z < dimZ){
-    cu_grid[id_x*dimYZ + id_y*dimZ + id_z].position = voxelSize.cwiseProduct(Eigen::Vector3d(id_x, id_y, id_z)) + voxelSize * 0.5;
+    cu_grid[id_x*dimYZ + id_y*dimZ + id_z].position = voxelSize.cwiseProduct(Eigen::Vector3d(id_x, id_y, id_z)) + voxelSize * 0.5 + center;
   }
 }
 __device__
@@ -79,9 +79,10 @@ void update(kinect_fusion::Voxel *cu_grid,
 
 namespace kinect_fusion {
 
-VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_) : 
+VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_, Eigen::Vector3d ctr_of_mass) : 
                     dimX(dimX), dimY(dimY), dimZ(dimZ), dimYZ(dimY*dimZ), gridSize(gridSize_), 
-                    center(gridSize * 0.5) {
+                    center(-0.5 * gridSize_ + ctr_of_mass) {
+                    // center(-0.5*gridSize_){
   grid.resize(dimX * dimYZ);
   voxelSize = gridSize.cwiseQuotient(Eigen::Vector3d(dimX, dimY, dimZ));
   initializeGrid();
@@ -96,7 +97,7 @@ void VoxelGrid::initializeGrid() {
   dim3 thread_nums(tile_dim, tile_dim, tile_dim);  
   dim3 block_nums(dimX/tile_dim, dimY/tile_dim, dimZ/tile_dim);
 
-  initialize <<<block_nums,thread_nums>>> (cu_grid, dimX, dimY, dimZ, dimYZ, voxelSize, thread_nums);
+  initialize <<<block_nums,thread_nums>>> (cu_grid, dimX, dimY, dimZ, dimYZ, voxelSize, thread_nums, center);
   cudaDeviceSynchronize();
 }
 
@@ -156,20 +157,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
 
 int main(){
 
-double tx = 1.3434, ty = 0.6271, tz = 1.6606;
-double qx = 0.6583, qy = 0.6112, qz = -0.2938, qw = -0.3266;
-
-// Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
-Eigen::Matrix4d pose;
-Eigen::Vector3d trans(tx, ty, tz);
-Eigen::Quaterniond quat(qw, qx, qy, qz);
-
-pose.topLeftCorner<3, 3>() = quat.toRotationMatrix();
-pose.topRightCorner<3, 1>() = trans;
-pose(3,0) = pose(3,1) = pose(3,2) = 0.0;
-pose(3,3) = 1.0;
-
-auto pose_f = pose.cast<float>();
+auto pose_f = Eigen::Matrix4f::Identity();
 
 const char* img_loc = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png"; 
 
@@ -182,8 +170,8 @@ frame1 -> save_off_format("original.obj");
 
 Eigen::Vector3d gridSize(4,4,4); 
 unsigned int res = 256;
-
-kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize);
+Eigen::Vector3d ctr_of_mass = (frame1 -> center_of_mass).cast<double>();
+kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, ctr_of_mass);
 double mu = 0.02;
 auto start = std::chrono::high_resolution_clock::now();
 grid.updateGlobalTSDF(*frame1, mu);
@@ -192,7 +180,7 @@ auto end = std::chrono::high_resolution_clock::now();
 auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
 // kinect_fusion::utility::writeTSDFToFile("TSDF.txt", grid);
-Marching_Cubes::Mesher(grid, 0, "mesh2.off");
+Marching_Cubes::Mesher(grid, 0, "mesh.off");
 
 std::cout << "time for execution: " << duration << std::endl; 
 }
