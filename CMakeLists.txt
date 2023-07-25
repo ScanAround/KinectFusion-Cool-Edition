@@ -13,12 +13,12 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(/usr/include)  # Path to the FreeImage headers
 
 add_library(KinectFusionLib
-  src/tsdf/voxel_grid.cpp
-  src/tsdf/voxel.cpp
-  src/tsdf/kinect_fusion_utility.cpp
-  src/frame/Frame.cpp
-  src/frame/Frame_Pyramid.cpp
-  src/icp/GPU_icp.cpp
+  src/cpu/tsdf/voxel_grid.cpp
+  src/cpu/tsdf/voxel.cpp
+  src/cpu/tsdf/kinect_fusion_utility.cpp
+  src/cpu/frame/Frame.cpp
+  src/cpu/frame/Frame_Pyramid.cpp
+  src/cpu/icp/GPU_icp.cpp
 )
 
 add_executable(KinectFusionApp src/Kinect_Fusion.cpp)

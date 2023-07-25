@@ -1,8 +1,8 @@
-#include "frame/Frame_Pyramid.h"
-#include "icp/GPU_icp.h"
-#include "tsdf/voxel_grid.h"
-#include "tsdf/kinect_fusion_utility.h"
-#include "mesher/Marching_Cubes.h"
+#include "cpu/frame/Frame_Pyramid.h"
+#include "cpu/icp/ICP.h"
+#include "cpu/tsdf/voxel_grid.h"
+#include "cpu/tsdf/kinect_fusion_utility.h"
+#include "cpu/mesher/Marching_Cubes.h"
 
 int main(){
     //initiating mesher
