@@ -18,7 +18,7 @@ void calculate_Vks(Eigen::Matrix3f K_i,
                    float *Depth_k, int *dMk_0, int *dMk_1,
                    int width, int height){
   
-  int id_x = blockIdx.x; // each block is a row
+  int id_x = blockIdx.x; // each block is a column
   int id_y = threadIdx.y; // each thread is a pixel
   Eigen::Vector3f u_dot;
 
