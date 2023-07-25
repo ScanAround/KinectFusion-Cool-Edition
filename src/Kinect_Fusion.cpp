@@ -8,17 +8,18 @@ int main(){
     //initiating mesher
     std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
     
-    //initiating grid
-    Eigen::Vector3d gridSize(4,4,4); 
-    unsigned int res = 128;
-    kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize);
-    float mu = 0.02;
-    
     std::string s_dir = "data/rgbd_dataset_freiburg1_xyz/depth"; 
     auto filenames = kinect_fusion::utility::getPngFilesInDirectory(s_dir);
     
     Frame_Pyramid curr_frame(s_dir + "/" + filenames[0]);
-    curr_frame.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/G.obj");
+    curr_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/G.obj");
+    
+    //initiating grid
+    Eigen::Vector3d gridSize(4,4,4); 
+    unsigned int res = 128;
+    kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass);
+    float mu = 0.02;
+    
     //somehow we're getting a problem because of our initial T_gk probably
     grid.updateGlobalTSDF(*curr_frame.Depth_Pyramid[0], mu);
     mesher -> Mesher(grid, 0, "outputs/meshes/mesh_1.off");
