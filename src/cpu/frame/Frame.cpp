@@ -133,7 +133,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
     Eigen::Matrix3f K_calibration_inverse = K_calibration.inverse();
     
     Eigen::Vector3f u_dot;
-
+    int counter = 0;
     for(int i = 0; i < height; i++){
         for(int j = 0; j < width; j++){
             u_dot << j, i ,1;
@@ -149,11 +149,11 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
                 Eigen::Vector3f ans = (Depth_k[i*width + j]/ 5000.0f)* K_calibration_inverse *  u_dot; 
                 V_k.push_back(ans);
                 M_k1.push_back(i*width+j);
+                
             }
             // std::cout << ans[0] << ", " << ans[1] << ", " << ans[2] <<std::endl;
         }
     }
-
     return V_k;
 }
 

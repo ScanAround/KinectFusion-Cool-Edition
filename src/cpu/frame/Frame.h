@@ -52,11 +52,18 @@ public:
     };
 
     void apply_G_transform(){
+        int counter = 0;
         if(!transformed){
             for(int idx = 0 ; idx < V_k.size(); idx++){
                 V_gk.push_back(T_gk.block(0,0,3,3) * V_k[idx] + T_gk.block(0,3,3,1)); 
                 N_gk.push_back(T_gk.block(0,0,3,3) * N_k[idx]); 
+                
+                if(!std::isnan(V_gk[idx][0])){
+                    center_of_mass+= V_gk[idx];
+                    counter++;
+                } 
             }
+        center_of_mass /= static_cast<float>(V_gk.size());
         }
         transformed = true;
     };
@@ -115,6 +122,7 @@ public:
     }
 
     float * Raw_k;
+    Eigen::Vector3f center_of_mass = Eigen::Vector3f::Zero();
 private:
     FIBITMAP * dib;
     //Initial Raw Depth Map
