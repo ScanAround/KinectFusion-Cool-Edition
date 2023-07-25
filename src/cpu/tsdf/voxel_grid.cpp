@@ -16,12 +16,16 @@ void VoxelGrid::initializeGrid() {
 
   // The following is a way to initialize a 3D array/vector without for loops.
   grid = std::vector<Voxel>(dimX * dimY * dimZ);
+  grid = std::vector<Voxel>(dimX * dimY * dimZ);
   
   // In essence, we're scaling the voxel indices by the size of each voxel to get the position in 
   // the global frame. This is done because the voxel indices are in grid coordinates (which range 
   // from 0 to dimX-1, 0 to dimY-1, and 0 to dimZ-1), while we want the position in world 
   // coordinates (which can be any real numbers). So, we convert from grid coordinates to world 
   // coordinates by multiplying with the size of each voxel.
+  for(size_t x = 0; x < dimX; ++x) {
+    for(size_t y = 0; y < dimY; ++y) {
+      for(size_t z = 0; z < dimZ; ++z) {
   for(size_t x = 0; x < dimX; ++x) {
     for(size_t y = 0; y < dimY; ++y) {
       for(size_t z = 0; z < dimZ; ++z) {
@@ -32,6 +36,8 @@ void VoxelGrid::initializeGrid() {
         // if a voxel's size is 0.1 meter in each dimension, and we're looking at the voxel at 
         // indices (3, 2, 1), the position of this voxel in the global frame would be 
         // (0.3, 0.2, 0.1).
+        // grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
+        grid[x*dimYZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
         // grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
         grid[x*dimYZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
       }

@@ -19,6 +19,8 @@ public:
 	//! Initializes an empty volume dataset.
 	Volume(Eigen::Vector3d min_, Eigen::Vector3d max_, uint dx_ = 10, uint dy_ = 10, uint dz_ = 10, uint dim = 1);
 
+	Volume(const Volume& v);
+
 	~Volume();
 
 	inline void computeMinMaxValues(double& minVal, double& maxVal) const
