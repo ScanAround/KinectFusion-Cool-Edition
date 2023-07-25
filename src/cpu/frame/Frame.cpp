@@ -180,7 +180,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
     else{
         throw std::logic_error("Your V_ks haven't been calculated yet :/");
     }
-    return V_k;
+    return N_k;
 }
 
 void Frame::process_image(float sigma_r , float sigma_s ,  int filter_size, bool apply_bilateral){
