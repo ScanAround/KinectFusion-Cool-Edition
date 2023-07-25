@@ -15,7 +15,7 @@ public:
     
     Frame(const char * image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
     
-    Frame(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width, int height);
+    Frame(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width = 640, int height = 480);
     
     ~Frame();
 
