@@ -47,18 +47,17 @@ Frame_Pyramid::Frame_Pyramid(std::string image_dir_s){
     Depth_Pyramid[2] -> process_image(0.01, 1.0, 5);
 }
 
-Frame_Pyramid::Frame_Pyramid(Frame & raytracing_frame){
+Frame_Pyramid::Frame_Pyramid(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width, int height):
+T_gk(T_gk){
 
-    T_gk << raytracing_frame.T_gk;
+    Depth_Pyramid[0] = new Frame(V_gks, N_gks, T_gk, width, height);
+    Depth_Pyramid[1] = Depth_Pyramid[0];
+    Depth_Pyramid[2] = Depth_Pyramid[0];
 
-    Depth_Pyramid[0] = &raytracing_frame;
-    Depth_Pyramid[1] = &raytracing_frame;
-    Depth_Pyramid[2] = &raytracing_frame;
-    
 }
 
 Frame_Pyramid::~Frame_Pyramid(){
-    delete Depth_Pyramid[0];
-    delete Depth_Pyramid[1];
-    delete Depth_Pyramid[2];
+    delete[] Depth_Pyramid[0];
+    delete[] Depth_Pyramid[1];
+    delete[] Depth_Pyramid[2];
 }
