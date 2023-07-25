@@ -155,32 +155,32 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
 
 }
 
-int main(){
+// int main(){
 
-auto pose_f = Eigen::Matrix4f::Identity();
+// auto pose_f = Eigen::Matrix4f::Identity();
 
-const char* img_loc = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png"; 
+// const char* img_loc = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png"; 
 
-Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
+// Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
 
-frame1 -> process_image();
+// frame1 -> process_image();
 
-frame1 -> save_G_off_format("G.obj");
-frame1 -> save_off_format("original.obj");
+// frame1 -> save_G_off_format("G.obj");
+// frame1 -> save_off_format("original.obj");
 
-Eigen::Vector3d gridSize(4,4,4); 
-unsigned int res = 256;
-Eigen::Vector3d ctr_of_mass = (frame1 -> center_of_mass).cast<double>();
-kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, ctr_of_mass);
-double mu = 0.02;
-auto start = std::chrono::high_resolution_clock::now();
-grid.updateGlobalTSDF(*frame1, mu);
+// Eigen::Vector3d gridSize(4,4,4); 
+// unsigned int res = 256;
+// Eigen::Vector3d ctr_of_mass = (frame1 -> center_of_mass).cast<double>();
+// kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, ctr_of_mass);
+// double mu = 0.02;
+// auto start = std::chrono::high_resolution_clock::now();
+// grid.updateGlobalTSDF(*frame1, mu);
 
-auto end = std::chrono::high_resolution_clock::now();
-auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+// auto end = std::chrono::high_resolution_clock::now();
+// auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-// kinect_fusion::utility::writeTSDFToFile("TSDF.txt", grid);
-Marching_Cubes::Mesher(grid, 0, "mesh.off");
+// // kinect_fusion::utility::writeTSDFToFile("TSDF.txt", grid);
+// Marching_Cubes::Mesher(grid, 0, "mesh.off");
 
-std::cout << "time for execution: " << duration << std::endl; 
-}
+// std::cout << "time for execution: " << duration << std::endl; 
+// }
