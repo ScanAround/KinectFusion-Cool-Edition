@@ -4,9 +4,9 @@
 
 namespace kinect_fusion {
 
-VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_) : 
+VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_, Eigen::Vector3d center): 
                     dimX(dimX), dimY(dimY), dimZ(dimZ), dimYZ(dimY*dimZ), gridSize(gridSize_), 
-                    center(gridSize * 0.5) {
+                    center(center) {
   // initially the grid is centered at gridSize * 0.5
   voxelSize = gridSize.cwiseQuotient(Eigen::Vector3d(dimX, dimY, dimZ));
   initializeGrid();

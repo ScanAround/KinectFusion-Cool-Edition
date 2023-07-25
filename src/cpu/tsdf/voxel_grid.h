@@ -44,7 +44,7 @@ public:
   // Voxel size along Z: 4 / 512 = 0.0078125 meters
   // So, each voxel in our grid would be a cube with a side length of approximately 0.0078125 
   // meters.
-  VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_);
+  VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_, Eigen::Vector3d center = Eigen::Vector3d::Zero());
 
   // The grid is initialized with the origin at [0,0,0] and center at gridSize * 0.5.
   void initializeGrid();
