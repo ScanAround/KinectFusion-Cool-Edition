@@ -55,6 +55,8 @@ public:
         return u;
     };
 
+
+    //might want to parallelize
     void apply_G_transform(){
         int counter = 0;
         if(!transformed){

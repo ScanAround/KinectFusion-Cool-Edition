@@ -27,7 +27,7 @@ void ICP::correspondence_finder(Eigen::Matrix4f T_curr_frame, Frame & curr_frame
                 if(!std::isnan(prev_frame.N_gk[idx_in_prev][0])){
                     // check if distances between corresponding vectors are below threshold
                     if((curr_V_k_transformed[i] - prev_frame.V_gk[idx_in_prev]).norm() <= this->distance_threshold){
-                        // check if distances between corresponding angles are below threshold
+                        // check if distances between corresponding angles are within threshold
                         if((curr_N_k_transformed[i].dot(prev_frame.N_gk[idx_in_prev])) >= this->angle_threshold){
                             matches.push_back(std::make_pair(i, idx_in_prev));
                         }
