@@ -149,7 +149,6 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
   if(cudaStatus2 != cudaSuccess){
     std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus2) << std::endl;
   };
-  cudaFree(cu_grid);
   cudaFree(R);
 }
 
