@@ -31,7 +31,6 @@ public:
     
     void save_G_off_format(const std::string & where_to_save);
     
-    void save_G_off_format(const std::string & where_to_save);
     // takes a vector in the global frame and backprojects it to camera pixels
     Eigen::Vector2i vec_to_pixel(const Eigen::Vector3f& vec){
         Eigen::Matrix3f rotation = T_gk.inverse().block(0,0,3,3);
@@ -123,9 +122,6 @@ public:
     float get_R(int x, int y){
         return this -> Raw_k[y*width + x] * 255.0f * 255.0f;
     };
-    int get_R_size(){
-        return sizeof(Raw_k);
-    }
     int get_R_size(){
         return sizeof(Raw_k);
     }

@@ -14,7 +14,7 @@ public:
     
     Frame_Pyramid(std::string image_dir);
 
-    Frame_Pyramid::Frame_Pyramid(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width = 640, int height = 480);
+    Frame_Pyramid(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width = 640, int height = 480);
 
     ~Frame_Pyramid();
 
