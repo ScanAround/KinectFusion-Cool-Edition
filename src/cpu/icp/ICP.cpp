@@ -83,7 +83,6 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             // std::cout << b << std::endl;
 
             Eigen::Vector<float, 6> x = A.ldlt().solve(b); //ldlt because ATA not always Positive Definite
-            // std::cout << "x: " << x << std::endl;
 
             float alpha = x[0];
             float beta = x[1];
