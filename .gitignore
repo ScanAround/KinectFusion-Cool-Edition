@@ -3406,3 +3406,6 @@ src/tsdf/G_Frame1.obj
 src/tsdf/mesh2.off
 src/tsdf/tsdf_gpu_debug
 src/tsdf/tsdf_gpu_debug
+src/cpu/icp/icp_debug
+.gitignore
+src/gpu/icp/icp_cu_debug
