@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <FreeImage.h>
+#include <chrono>
 #define MINF -std::numeric_limits<float>::infinity()
 
 void ICP::correspondence_finder(Eigen::Matrix4f T_curr_frame, Frame & curr_frame, Frame & prev_frame, std::vector<std::pair<int, int>>& matches){
@@ -69,9 +70,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
                 // we have to transform our source.V_k into our estimated transformation matrix
                 Eigen::Vector3f s_i = T_gk_z.block(0,0,3,3) * curr_frame.V_k[correspondences[j].first] + T_gk_z.block(0,3,3,1);
                 Eigen::Vector3f d_i = prev_frame.V_gk[correspondences[j].second];
-                
                 Eigen::Vector3f n_i = prev_frame.N_gk[correspondences[j].second];
-                
                 A_jT.block(0,0,3,1) = s_i.cross(n_i);
                 A_jT.block(3,0,3,1) = n_i;
 
@@ -84,7 +83,8 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             // std::cout << b << std::endl;
 
             Eigen::Vector<float, 6> x = A.ldlt().solve(b); //ldlt because ATA not always Positive Definite
-            
+            // std::cout << "x: " << x << std::endl;
+
             float alpha = x[0];
             float beta = x[1];
             float gamma = x[2];
@@ -128,24 +128,28 @@ Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
 
 //     FreeImage_Initialise();
 //     const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-//     const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.194330.png";
-    
+//     const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
+
 //     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
-//     frame1->Depth_Pyramid[0]->save_off_format("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/scene1.obj");
+//     frame1->Depth_Pyramid[0]->save_off_format("scene1.obj");
 
 //     Frame_Pyramid* frame2 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_2), depth_map_dir_2));
-//     frame2->Depth_Pyramid[0]->save_off_format("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/scene2.obj");
+//     frame2->Depth_Pyramid[0]->save_off_format("scene2.obj");
 
-//     ICP* icp = new ICP(*frame1, *frame2, 0.1f, 1.1f);
+//     auto start = std::chrono::high_resolution_clock::now();
+//     std::cout << "starting timer" << std::endl;
+//     ICP icp(*frame1, *frame2, 0.05f, 0.5f);
+//     auto T = icp.pyramid_ICP(false);
+//     auto end = std::chrono::high_resolution_clock::now();
+//     auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+//     std::cout << "time for execution: " << duration << std::endl; 
     
-//     auto T = icp -> pyramid_ICP(false);
-
-//     std::cout << T;
+//     std::cout << T << std::endl;
 
 //     std::vector<Eigen::Vector3f> V_tk;
 //     frame1->Depth_Pyramid[0]->apply_transform(T , V_tk);
-    
-//     std::ofstream OffFile("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/transformed_scene_1.obj");
+
+//     std::ofstream OffFile("transformed_scene_1.obj");
 //     for(auto V : V_tk){
 //         OffFile << "v " << V[0] << " " << V[1] << " " << V[2] << std::endl; 
 //     }
