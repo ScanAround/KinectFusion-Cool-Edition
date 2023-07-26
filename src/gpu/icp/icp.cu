@@ -9,6 +9,7 @@ void update_lower_triangle(float *A_jT, float* A){
     //column major update of lower triangle 
     for(int col = 0; col < 6; ++col){
         for(int row = col; row < 6; ++row){
+            // printf("lower triangle updates: %f", A_jT[row] * A_jT[col]);
             A[col * 6 + row] = A_jT[row] * A_jT[col];
         }
     }
@@ -18,11 +19,11 @@ void update_lower_triangle(float *A_jT, float* A){
 __device__ 
 Eigen::Vector2i vec_to_pixel(
     const Eigen::Vector3f vec,
-    Eigen::Matrix3f R_i, Eigen::Vector3f t_i,
+    Eigen::Matrix3f R_prev, Eigen::Vector3f t_prev,
     Eigen::Matrix3f K_calibration,
     int width, int height){
 
-  Eigen::Vector3f vec_camera_frame = R_i * vec + t_i;
+  Eigen::Vector3f vec_camera_frame = R_prev * vec + t_prev;
   
   Eigen::Vector3f u_dot = (K_calibration * vec_camera_frame) / vec_camera_frame[2];
 
@@ -43,55 +44,79 @@ Eigen::Vector2i vec_to_pixel(
 __global__ 
 void A_b_finder_block(
     Eigen::Matrix<float, 21, 1> *dA_arr, Eigen::Matrix<float, 6, 1> *db_arr,
-    Eigen::Matrix3f R_curr, Eigen::Vector3f t_curr, 
-    Eigen::Matrix3f R_prev, Eigen::Vector3f t_prev, 
+    Eigen::Matrix3f R_it, Eigen::Vector3f t_it, 
+    Eigen::Matrix3f R_prev_i, Eigen::Vector3f t_prev_i, 
     Eigen::Vector3f *curr_V_k, Eigen::Vector3f *curr_N_k,
     Eigen::Vector3f *prev_V_gk, Eigen::Vector3f *prev_N_gk,
     Eigen::Matrix3f K, 
     int width, int height,
-    int d_thresh, int a_thresh){
+    float d_thresh, float a_thresh){
 
-        int id_x = blockIdx.x; // each column of the image given to a block in cuda
-        int id_y = threadIdx.x; // each pixel in every column given to a thread
+        int id_x = threadIdx.x; // pixels per row
+        int id_y = blockIdx.x;  // rows
 
         if(id_x < width && id_y < height){
             int i = id_y * width + id_x;
-
             // transforming the current frame to the current pose iteration
-            curr_V_k[i] = R_curr * curr_V_k[i] + t_curr;
-            curr_N_k[i] = R_curr * curr_N_k[i];
+            curr_V_k[i] = R_it * curr_V_k[i] + t_it; //converting V_k to V_gk_i
+            curr_N_k[i] = R_it * curr_N_k[i]; //converting N_k to N_gk_i
 
             //projecting back to previous frame pixels
-            Eigen::Vector2i pixel = vec_to_pixel(curr_V_k[i], R_prev, t_prev, K, width, height);
+            Eigen::Vector2i pixel = vec_to_pixel(curr_V_k[i], R_prev_i, t_prev_i, K, width, height);
             int idx_in_prev = pixel[1]*width + pixel[0];
+            
+            // if(idx_in_prev != 0) {
+            //     printf(" idx in prev %i, idx in curr %i\n",idx_in_prev, i);
+            //     printf(" above ifs: val in prev %f, val in curr %f\n",prev_V_gk[idx_in_prev](0), curr_V_k[i](0));
+            // }
 
             // normals aren't calculated in last row so check if pixel is before last row
             if(idx_in_prev < (height-1) * width){
                 // checking if normals are valid in previous frame
                 if(!std::isnan(prev_N_gk[idx_in_prev][0])){
-                    // checking if distances within threshold
                     if((curr_V_k[i] - prev_V_gk[idx_in_prev]).norm() <= d_thresh){
-                        // checking if angles within threshold
                         if(curr_N_k[i].dot(prev_N_gk[idx_in_prev]) >= a_thresh){
-
-                            Eigen::Vector3f s_i = R_curr * curr_V_k[i] + t_curr;
+                            Eigen::Vector3f s_i = curr_V_k[i]; // already transformed
                             Eigen::Vector3f d_i = prev_V_gk[idx_in_prev];
                             Eigen::Vector3f n_i = prev_N_gk[idx_in_prev];
+                            if(prev_V_gk[idx_in_prev](0) != curr_V_k[i](0)){
+                                printf(" idx in prev %i, idx in curr %i\n",idx_in_prev, i);
+                                printf(" val in prev %f, val in curr %f\n",prev_V_gk[idx_in_prev](0), curr_V_k[i](0));
+                            }
                             Eigen::Matrix<float, 6, 1, Eigen::ColMajor> A_jT;
                             A_jT << s_i.cross(n_i), n_i;
-                            
                             Eigen::Matrix<float, 21, 1, Eigen::ColMajor> _A;
-                            // A.selfadjointView<Eigen::Lower>().rankUpdate(A_jT);
                             update_lower_triangle(A_jT.data(), _A.data());
-                            dA_arr[id_x] += _A;
-                            db_arr[id_x] += A_jT * (n_i.dot(d_i) - n_i.dot(s_i));
-                            __syncthreads();
+                            // printf(" below: d_i %f, s_i%f \n", d_i(0), s_i(0));
+                            
+                            // race condition problem maybe not sure
+                            dA_arr[id_y] += _A; 
+                            db_arr[id_y] += A_jT * (n_i.dot(d_i) - n_i.dot(s_i));
+
+                            // if((n_i.dot(d_i) - n_i.dot(s_i)) != 0) printf(" di %f | ni dot si %f | ni dot di %f | si %f | subtraction %f \n",d_i(0), (n_i.dot(s_i)), (n_i.dot(d_i)), s_i(0), (n_i.dot(d_i) - n_i.dot(s_i)));
+                            __syncthreads(); //because we need all threads to finish adding to per block sum
+                            
                         }
                     }
                 }
             }
         }
     }
+
+__global__ 
+void sum_over_blocks(
+    Eigen::Matrix<float, 21, 1> *dA_arr, Eigen::Matrix<float, 6, 1> *db_arr, int size,
+    Eigen::Matrix<float, 21, 1> *dA_sum, Eigen::Matrix<float, 6, 1> *db_sum){
+        
+        int idx = threadIdx.x + blockDim.x * blockIdx.x;
+        if(idx < size){
+            for(int i = 0; i < 21; ++i){
+                // printf("ith element %f", dA_arr[idx](i));
+                dA_sum[0](i) += dA_arr[idx](i);
+                db_sum[0](i) += db_arr[idx](i);
+            }
+        }
+}
 
 Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_frame, int iterations, bool cuda){
     
@@ -110,7 +135,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     }
     cudaStatus0 = cudaMemcpy(curr_V_k, curr_frame.V_k.data(), sizeof(Eigen::Vector3f) * curr_frame.V_k.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in Cuda Copy of dA: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in Cuda Copy of curr_V_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
 
     cudaStatus0 = cudaMalloc(&curr_N_k, sizeof(Eigen::Vector3f) * curr_frame.N_k.size());
@@ -119,7 +144,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     }
     cudaStatus0 = cudaMemcpy(curr_N_k, curr_frame.N_k.data(), sizeof(Eigen::Vector3f) * curr_frame.N_k.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in Cuda Copy of dA: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in Cuda Copy of curr_N_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
     
     cudaStatus0 = cudaMalloc(&prev_V_gk, sizeof(Eigen::Vector3f) * prev_frame.V_gk.size());
@@ -128,7 +153,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     }
     cudaStatus0 = cudaMemcpy(prev_V_gk, prev_frame.V_gk.data(), sizeof(Eigen::Vector3f) * prev_frame.V_gk.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in Cuda Copy of dA: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in Cuda Copy of prev_V_gk: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
 
     cudaStatus0 = cudaMalloc(&prev_N_gk, sizeof(Eigen::Vector3f) * prev_frame.N_gk.size());
@@ -137,30 +162,38 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     }
     cudaStatus0 = cudaMemcpy(prev_N_gk, prev_frame.N_gk.data(), sizeof(Eigen::Vector3f) * prev_frame.N_gk.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in Cuda Copy of dA: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in Cuda Copy of prev_N_gk: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
 
     for(int i = 0; i < iterations; i++){
         
         Eigen::Matrix<float, 6, 6> A = Eigen::MatrixXf::Zero(6, 6);
+        Eigen::Matrix<float, 21, 1> LA = Eigen::MatrixXf::Zero(21, 1);
         Eigen::Matrix<float, 6, 1> b = Eigen::MatrixXf::Zero(6, 1);
-        int block_num = curr_frame.width;
-        int thread_num = curr_frame.height;
+        // const int tile_dim = 8;
+        // dim3 thread_num(tile_dim, tile_dim); 
+        // dim3 block_num(curr_frame.width/tile_dim, curr_frame.height/tile_dim);
 
-        Eigen::Matrix<float, 6, 6>* dA;
-        Eigen::Matrix<float, 6, 1>* db;
-        cudaMalloc(&dA, sizeof(Eigen::Matrix<float, 6, 6>));
-        cudaMalloc(&db, sizeof(Eigen::Matrix<float, 6, 1>));
+        int block_num = curr_frame.height;
+        int thread_num = curr_frame.width;
+
+        Eigen::Matrix<float, 21, 1>* dA_arr;
+        Eigen::Matrix<float, 21, 1>* dA_sum;
+        Eigen::Matrix<float, 6, 1>* db_arr;
+        Eigen::Matrix<float, 6, 1>* db_sum;
+        cudaMalloc(&dA_arr, sizeof(Eigen::Matrix<float, 21, 1>) * curr_frame.width * curr_frame.height);
+        cudaMalloc(&dA_sum, sizeof(Eigen::Matrix<float, 21, 1>));
+        cudaMalloc(&db_arr, sizeof(Eigen::Matrix<float, 6, 1>) * curr_frame.width * curr_frame.height);
+        cudaMalloc(&db_sum, sizeof(Eigen::Matrix<float, 6, 1>));
 
         // Copy the temporary storage to the device
-        cudaMemcpy(dA, &A, sizeof(Eigen::Matrix<float, 6, 6>), cudaMemcpyHostToDevice);
-        cudaMemcpy(db, &b, sizeof(Eigen::Matrix<float, 6, 1>), cudaMemcpyHostToDevice);
-
+        cudaMemcpy(dA_sum, &A, sizeof(Eigen::Matrix<float, 21, 1>), cudaMemcpyHostToDevice);
+        cudaMemcpy(db_sum, &b, sizeof(Eigen::Matrix<float, 6, 1>), cudaMemcpyHostToDevice);
 
         A_b_finder_block <<<block_num, thread_num>>>(
-            dA, db, 
-            curr_frame.T_gk.block(0,0,3,3), curr_frame.T_gk.block(0,3,3,1),
-            prev_frame.T_gk.block(0,0,3,3), prev_frame.T_gk.block(0,3,3,1),
+            dA_arr, db_arr, 
+            T_gk_z.block(0,0,3,3), T_gk_z.block(0,3,3,1),
+            prev_frame.T_gk.inverse().block(0,0,3,3), prev_frame.T_gk.inverse().block(0,3,3,1),
             curr_V_k, curr_N_k,
             prev_V_gk, prev_N_gk,
             prev_frame.K_calibration, 
@@ -168,22 +201,37 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             distance_threshold, angle_threshold
         );
         cudaDeviceSynchronize();
-        // for()
-        cudaStatus0 = cudaMemcpy(&A, dA, sizeof(Eigen::Matrix<float, 6, 6>) * block_num, cudaMemcpyDeviceToHost);
+        
+        sum_over_blocks <<<block_num, thread_num>>>(
+            dA_arr, db_arr, curr_frame.width * curr_frame.height,   
+            dA_sum, db_sum
+        );
+        // cudaDeviceSynchronize();
+
+        cudaFree(dA_arr);
+        cudaFree(db_arr);
+
+        cudaStatus0 = cudaMemcpy(&LA, dA_sum, sizeof(Eigen::Matrix<float, 21, 1>), cudaMemcpyDeviceToHost);
         if(cudaStatus0 != cudaSuccess){
             std::cout << "Problem in Cuda Copy of dA to A: " << cudaGetErrorString(cudaStatus0) << std::endl;
         }
         
-        cudaStatus0 = cudaMemcpy(&A, db, sizeof(Eigen::Matrix<float, 6, 1>) * block_num, cudaMemcpyDeviceToHost);
+        cudaStatus0 = cudaMemcpy(&b, db_sum, sizeof(Eigen::Matrix<float, 6, 1>), cudaMemcpyDeviceToHost);
         if(cudaStatus0 != cudaSuccess){
             std::cout << "Problem in Cuda Copy of db to b: " << cudaGetErrorString(cudaStatus0) << std::endl;
         }
         
-        cudaError_t cudaStatus = cudaGetLastError();
-        if (cudaStatus != cudaSuccess) {
-            std::cout << "CUDA error: " << cudaGetErrorString(cudaStatus) << std::endl;
+        cudaStatus0 = cudaGetLastError();
+        if (cudaStatus0 != cudaSuccess) {
+            std::cout << "CUDA error: " << cudaGetErrorString(cudaStatus0) << std::endl;
         }
 
+        for(int col = 0; col < 6; ++col){
+            for(int row = col; row < 6; ++row){
+                A(row, col) = LA[col * 6 + row];
+            }
+        }
+        std::cout << A << std::endl;
         Eigen::Vector<float, 6> x = A.ldlt().solve(b); //ldlt because ATA not always Positive Definite
         
         
@@ -229,7 +277,7 @@ int main(){
 
     FreeImage_Initialise();
     const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.194330.png";
+    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
 
     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
     frame1->Depth_Pyramid[0]->save_off_format("scene1.obj");
@@ -238,7 +286,8 @@ int main(){
     frame2->Depth_Pyramid[0]->save_off_format("scene2.obj");
 
     auto start = std::chrono::high_resolution_clock::now();
-    ICP icp(*frame1, *frame2, 0.1f, 1.1f);
+    std::cout << "starting timer" << std::endl;
+    ICP icp(*frame1, *frame2, 0.1f, 0.5f);
     auto T = icp.pyramid_ICP(false);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
@@ -249,7 +298,7 @@ int main(){
     std::vector<Eigen::Vector3f> V_tk;
     frame1->Depth_Pyramid[0]->apply_transform(T , V_tk);
 
-    std::ofstream OffFile("/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/transformed_scene_1.obj");
+    std::ofstream OffFile("transformed_scene_1.obj");
     for(auto V : V_tk){
         OffFile << "v " << V[0] << " " << V[1] << " " << V[2] << std::endl; 
     }
