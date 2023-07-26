@@ -121,7 +121,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
                                  double mu) {
 
   float *R;
-  auto CudaAssignemnt = cudaMallocManaged(&R, sizeof(float) * curr_frame.width * curr_frame.height);
+  auto CudaAssignemnt = cudaMalloc(&R, sizeof(float) * curr_frame.width * curr_frame.height);
   if(CudaAssignemnt != cudaSuccess){
     std::cout << "Problem in Assignment: " << CudaAssignemnt <<std::endl;
   }
@@ -149,6 +149,8 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
   if(cudaStatus2 != cudaSuccess){
     std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus2) << std::endl;
   };
+  cudaFree(cu_grid);
+  cudaFree(R);
 }
 
 }
