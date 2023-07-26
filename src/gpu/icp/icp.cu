@@ -263,34 +263,34 @@ Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
     return T;
 }
 
-int main(){
+// int main(){
 
-    FreeImage_Initialise();
-    const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
+//     FreeImage_Initialise();
+//     const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
+//     const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
 
-    Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
-    frame1->Depth_Pyramid[0]->save_off_format("scene1.obj");
+//     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
+//     frame1->Depth_Pyramid[0]->save_off_format("scene1.obj");
 
-    Frame_Pyramid* frame2 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_2), depth_map_dir_2));
-    frame2->Depth_Pyramid[0]->save_off_format("scene2.obj");
+//     Frame_Pyramid* frame2 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_2), depth_map_dir_2));
+//     frame2->Depth_Pyramid[0]->save_off_format("scene2.obj");
 
-    auto start = std::chrono::high_resolution_clock::now();
-    std::cout << "starting timer" << std::endl;
-    ICP icp(*frame1, *frame2, 0.05f, 0.5f);
-    auto T = icp.pyramid_ICP(false);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-    std::cout << "time for execution: " << duration << std::endl; 
+//     auto start = std::chrono::high_resolution_clock::now();
+//     std::cout << "starting timer" << std::endl;
+//     ICP icp(*frame1, *frame2, 0.05f, 0.5f);
+//     auto T = icp.pyramid_ICP(false);
+//     auto end = std::chrono::high_resolution_clock::now();
+//     auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+//     std::cout << "time for execution: " << duration << std::endl; 
     
-    std::cout << T << std::endl;
+//     std::cout << T << std::endl;
 
-    std::vector<Eigen::Vector3f> V_tk;
-    frame1->Depth_Pyramid[0]->apply_transform(T , V_tk);
+//     std::vector<Eigen::Vector3f> V_tk;
+//     frame1->Depth_Pyramid[0]->apply_transform(T , V_tk);
 
-    std::ofstream OffFile("transformed_scene_1.obj");
-    for(auto V : V_tk){
-        OffFile << "v " << V[0] << " " << V[1] << " " << V[2] << std::endl; 
-    }
-    OffFile.close();
-}
+//     std::ofstream OffFile("transformed_scene_1.obj");
+//     for(auto V : V_tk){
+//         OffFile << "v " << V[0] << " " << V[1] << " " << V[2] << std::endl; 
+//     }
+//     OffFile.close();
+// }
