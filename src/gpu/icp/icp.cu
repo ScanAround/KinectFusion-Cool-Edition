@@ -59,11 +59,11 @@ void A_b_finder_block(
         if(id_x < width && id_y < height){
             int i = id_y * width + id_x;
             // transforming the current frame to the current pose iteration
-            curr_V_k[i] = R_it * curr_V_k[i] + t_it; //converting V_k to V_gk_i
-            curr_N_k[i] = R_it * curr_N_k[i]; //converting N_k to N_gk_i
+            auto curr_V_k_t = R_it * curr_V_k[i] + t_it; //converting V_k to V_gk_i
+            auto curr_N_k_t = R_it * curr_N_k[i]; //converting N_k to N_gk_i
 
             //projecting back to previous frame pixels
-            Eigen::Vector2i pixel = vec_to_pixel(curr_V_k[i], R_prev_i, t_prev_i, K, width, height);
+            Eigen::Vector2i pixel = vec_to_pixel(curr_V_k_t, R_prev_i, t_prev_i, K, width, height);
             int idx_in_prev = pixel[1]*width + pixel[0];           
 
             // normals aren't calculated in last row so check if pixel is before last row
@@ -71,10 +71,10 @@ void A_b_finder_block(
                 // checking if normals are valid in previous frame
                 if(!std::isnan(prev_N_gk[idx_in_prev][0]) 
                 && !std::isnan(prev_V_gk[idx_in_prev][0])
-                && !std::isnan(curr_V_k[i][0])){
-                    if((curr_V_k[i] - prev_V_gk[idx_in_prev]).norm() <= d_thresh){
-                        if(curr_N_k[i].dot(prev_N_gk[idx_in_prev]) >= a_thresh){
-                            Eigen::Matrix<float, 3, 1, Eigen::ColMajor> s_i = curr_V_k[i]; // already transformed
+                && !std::isnan(curr_V_k_t[0])){
+                    if((curr_V_k_t - prev_V_gk[idx_in_prev]).norm() <= d_thresh){
+                        if(curr_N_k_t.dot(prev_N_gk[idx_in_prev]) >= a_thresh){
+                            Eigen::Matrix<float, 3, 1, Eigen::ColMajor> s_i = curr_V_k_t; // already transformed
                             Eigen::Matrix<float, 3, 1, Eigen::ColMajor> d_i = prev_V_gk[idx_in_prev];
                             Eigen::Matrix<float, 3, 1, Eigen::ColMajor> n_i = prev_N_gk[idx_in_prev];
                             
@@ -88,6 +88,8 @@ void A_b_finder_block(
                             // atomicAdd to stop race sync problems
                             for(int element = 0; element < 21 ; ++element){
                                 atomicAdd(&dA_arr[id_y](element), _A(element));
+                            }
+                            for(int element = 0; element < 6 ; ++element){
                                 atomicAdd(&db_arr[id_y](element), A_jT(element) * (n_i.dot(d_i) - n_i.dot(s_i)));
                             }                            
                         }
@@ -123,36 +125,36 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     Eigen::Vector3f *prev_V_gk;
     Eigen::Vector3f *prev_N_gk;
     
-    cudaError_t cudaStatus0 = cudaMalloc(&curr_V_k, sizeof(Eigen::Vector3f) * curr_frame.V_k.size());
+    cudaError_t cudaStatus0 = cudaMallocManaged(&curr_V_k, sizeof(Eigen::Vector3f) * curr_frame.V_k.size());
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in CudaMalloc curr_V_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in cudaMallocManaged curr_V_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
     cudaStatus0 = cudaMemcpy(curr_V_k, curr_frame.V_k.data(), sizeof(Eigen::Vector3f) * curr_frame.V_k.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
         std::cout << "Problem in Cuda Copy of curr_V_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
 
-    cudaStatus0 = cudaMalloc(&curr_N_k, sizeof(Eigen::Vector3f) * curr_frame.N_k.size());
+    cudaStatus0 = cudaMallocManaged(&curr_N_k, sizeof(Eigen::Vector3f) * curr_frame.N_k.size());
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in CudaMalloc curr_N_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in cudaMallocManaged curr_N_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
     cudaStatus0 = cudaMemcpy(curr_N_k, curr_frame.N_k.data(), sizeof(Eigen::Vector3f) * curr_frame.N_k.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
         std::cout << "Problem in Cuda Copy of curr_N_k: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
     
-    cudaStatus0 = cudaMalloc(&prev_V_gk, sizeof(Eigen::Vector3f) * prev_frame.V_gk.size());
+    cudaStatus0 = cudaMallocManaged(&prev_V_gk, sizeof(Eigen::Vector3f) * prev_frame.V_gk.size());
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in CudaMalloc prev_V_gk: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in cudaMallocManaged prev_V_gk: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
     cudaStatus0 = cudaMemcpy(prev_V_gk, prev_frame.V_gk.data(), sizeof(Eigen::Vector3f) * prev_frame.V_gk.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
         std::cout << "Problem in Cuda Copy of prev_V_gk: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
 
-    cudaStatus0 = cudaMalloc(&prev_N_gk, sizeof(Eigen::Vector3f) * prev_frame.N_gk.size());
+    cudaStatus0 = cudaMallocManaged(&prev_N_gk, sizeof(Eigen::Vector3f) * prev_frame.N_gk.size());
     if(cudaStatus0 != cudaSuccess){
-        std::cout << "Problem in CudaMalloc prev_N_gk: " << cudaGetErrorString(cudaStatus0) << std::endl;
+        std::cout << "Problem in cudaMallocManaged prev_N_gk: " << cudaGetErrorString(cudaStatus0) << std::endl;
     }
     cudaStatus0 = cudaMemcpy(prev_N_gk, prev_frame.N_gk.data(), sizeof(Eigen::Vector3f) * prev_frame.N_gk.size(), cudaMemcpyHostToDevice);
     if(cudaStatus0 != cudaSuccess){
@@ -175,10 +177,10 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
         Eigen::Matrix<float, 21, 1>* dA_sum;
         Eigen::Matrix<float, 6, 1>* db_arr;
         Eigen::Matrix<float, 6, 1>* db_sum;
-        cudaMalloc(&dA_arr, sizeof(Eigen::Matrix<float, 21, 1>) * block_num);
-        cudaMalloc(&dA_sum, sizeof(Eigen::Matrix<float, 21, 1>));
-        cudaMalloc(&db_arr, sizeof(Eigen::Matrix<float, 6, 1>) * block_num);
-        cudaMalloc(&db_sum, sizeof(Eigen::Matrix<float, 6, 1>));
+        cudaMallocManaged(&dA_arr, sizeof(Eigen::Matrix<float, 21, 1>) * block_num);
+        cudaMallocManaged(&dA_sum, sizeof(Eigen::Matrix<float, 21, 1>));
+        cudaMallocManaged(&db_arr, sizeof(Eigen::Matrix<float, 6, 1>) * block_num);
+        cudaMallocManaged(&db_sum, sizeof(Eigen::Matrix<float, 6, 1>));
 
         // Copy the temporary storage to the device
         cudaMemcpy(dA_sum, &A, sizeof(Eigen::Matrix<float, 21, 1>), cudaMemcpyHostToDevice);
@@ -202,8 +204,6 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
         );
         // cudaDeviceSynchronize();
 
-        cudaFree(dA_arr);
-        cudaFree(db_arr);
 
         cudaStatus0 = cudaMemcpy(&LA, dA_sum, sizeof(Eigen::Matrix<float, 21, 1>), cudaMemcpyDeviceToHost);
         if(cudaStatus0 != cudaSuccess){
@@ -214,7 +214,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
         if(cudaStatus0 != cudaSuccess){
             std::cout << "Problem in Cuda Copy of db to b: " << cudaGetErrorString(cudaStatus0) << std::endl;
         }
-        
+
         cudaStatus0 = cudaGetLastError();
         if (cudaStatus0 != cudaSuccess) {
             std::cout << "CUDA error: " << cudaGetErrorString(cudaStatus0) << std::endl;
@@ -227,8 +227,6 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
                 i_temp++;
             }
         }
-        std::cout << A << std::endl;
-        std::cout << b << std::endl;
         Eigen::Vector<float, 6> x = A.ldlt().solve(b); //ldlt because ATA not always Positive Definite
         
         
@@ -244,11 +242,6 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
         
         
     }
-
-    cudaFree(curr_V_k);
-    cudaFree(curr_N_k);
-    cudaFree(prev_V_gk);
-    cudaFree(prev_N_gk);
         
     return T_gk_z;
     
