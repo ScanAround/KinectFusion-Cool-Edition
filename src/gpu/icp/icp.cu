@@ -7,9 +7,9 @@
 __device__
 void update_lower_triangle(float *A_jT, float* A){
     //column major update of lower triangle 
+    // printf("lower triangle updates: %f", A_jT[0] * A_jT[0]);
     for(int col = 0; col < 6; ++col){
         for(int row = col; row < 6; ++row){
-            // printf("lower triangle updates: %f", A_jT[row] * A_jT[col]);
             A[col * 6 + row] = A_jT[row] * A_jT[col];
         }
     }
@@ -63,39 +63,29 @@ void A_b_finder_block(
 
             //projecting back to previous frame pixels
             Eigen::Vector2i pixel = vec_to_pixel(curr_V_k[i], R_prev_i, t_prev_i, K, width, height);
-            int idx_in_prev = pixel[1]*width + pixel[0];
-            
-            // if(idx_in_prev != 0) {
-            //     printf(" idx in prev %i, idx in curr %i\n",idx_in_prev, i);
-            //     printf(" above ifs: val in prev %f, val in curr %f\n",prev_V_gk[idx_in_prev](0), curr_V_k[i](0));
-            // }
+            int idx_in_prev = pixel[1]*width + pixel[0];           
 
             // normals aren't calculated in last row so check if pixel is before last row
             if(idx_in_prev < (height-1) * width){
                 // checking if normals are valid in previous frame
-                if(!std::isnan(prev_N_gk[idx_in_prev][0])){
+                if(!std::isnan(prev_N_gk[idx_in_prev][0]) 
+                && !std::isnan(prev_V_gk[idx_in_prev][0])
+                && !std::isnan(curr_V_k[i][0])){
                     if((curr_V_k[i] - prev_V_gk[idx_in_prev]).norm() <= d_thresh){
                         if(curr_N_k[i].dot(prev_N_gk[idx_in_prev]) >= a_thresh){
                             Eigen::Vector3f s_i = curr_V_k[i]; // already transformed
                             Eigen::Vector3f d_i = prev_V_gk[idx_in_prev];
                             Eigen::Vector3f n_i = prev_N_gk[idx_in_prev];
-                            if(prev_V_gk[idx_in_prev](0) != curr_V_k[i](0)){
-                                printf(" idx in prev %i, idx in curr %i\n",idx_in_prev, i);
-                                printf(" val in prev %f, val in curr %f\n",prev_V_gk[idx_in_prev](0), curr_V_k[i](0));
-                            }
                             Eigen::Matrix<float, 6, 1, Eigen::ColMajor> A_jT;
                             A_jT << s_i.cross(n_i), n_i;
                             Eigen::Matrix<float, 21, 1, Eigen::ColMajor> _A;
                             update_lower_triangle(A_jT.data(), _A.data());
-                            // printf(" below: d_i %f, s_i%f \n", d_i(0), s_i(0));
-                            
-                            // race condition problem maybe not sure
-                            dA_arr[id_y] += _A; 
-                            db_arr[id_y] += A_jT * (n_i.dot(d_i) - n_i.dot(s_i));
-
-                            // if((n_i.dot(d_i) - n_i.dot(s_i)) != 0) printf(" di %f | ni dot si %f | ni dot di %f | si %f | subtraction %f \n",d_i(0), (n_i.dot(s_i)), (n_i.dot(d_i)), s_i(0), (n_i.dot(d_i) - n_i.dot(s_i)));
-                            __syncthreads(); //because we need all threads to finish adding to per block sum
-                            
+                            // might want to want to change dA_arr from eigen matrix to float array
+                            // race condition problem maybe not sure => atomicAdd
+                            for(int element = 0; element < 20 ; ++element){
+                                atomicAdd(&dA_arr[id_y](element), _A(element));
+                                atomicAdd(&db_arr[id_y](element), A_jT(element) * (n_i.dot(d_i) - n_i.dot(s_i)));
+                            }                            
                         }
                     }
                 }
@@ -108,12 +98,12 @@ void sum_over_blocks(
     Eigen::Matrix<float, 21, 1> *dA_arr, Eigen::Matrix<float, 6, 1> *db_arr, int size,
     Eigen::Matrix<float, 21, 1> *dA_sum, Eigen::Matrix<float, 6, 1> *db_sum){
         
-        int idx = threadIdx.x + blockDim.x * blockIdx.x;
+        int idx = threadIdx.x;
+        // printf("ith element %f", dA_arr[idx](0));
         if(idx < size){
             for(int i = 0; i < 21; ++i){
-                // printf("ith element %f", dA_arr[idx](i));
-                dA_sum[0](i) += dA_arr[idx](i);
-                db_sum[0](i) += db_arr[idx](i);
+                atomicAdd(&dA_sum[0](i), dA_arr[idx](i));
+                atomicAdd(&db_sum[0](i), db_arr[idx](i));
             }
         }
 }
@@ -181,9 +171,9 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
         Eigen::Matrix<float, 21, 1>* dA_sum;
         Eigen::Matrix<float, 6, 1>* db_arr;
         Eigen::Matrix<float, 6, 1>* db_sum;
-        cudaMalloc(&dA_arr, sizeof(Eigen::Matrix<float, 21, 1>) * curr_frame.width * curr_frame.height);
+        cudaMalloc(&dA_arr, sizeof(Eigen::Matrix<float, 21, 1>) * block_num);
         cudaMalloc(&dA_sum, sizeof(Eigen::Matrix<float, 21, 1>));
-        cudaMalloc(&db_arr, sizeof(Eigen::Matrix<float, 6, 1>) * curr_frame.width * curr_frame.height);
+        cudaMalloc(&db_arr, sizeof(Eigen::Matrix<float, 6, 1>) * block_num);
         cudaMalloc(&db_sum, sizeof(Eigen::Matrix<float, 6, 1>));
 
         // Copy the temporary storage to the device
@@ -202,7 +192,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
         );
         cudaDeviceSynchronize();
         
-        sum_over_blocks <<<block_num, thread_num>>>(
+        sum_over_blocks <<<1, block_num>>>(
             dA_arr, db_arr, curr_frame.width * curr_frame.height,   
             dA_sum, db_sum
         );
@@ -231,7 +221,8 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
                 A(row, col) = LA[col * 6 + row];
             }
         }
-        std::cout << A << std::endl;
+        // std::cout << A << std::endl;
+        // std::cout << b << std::endl;
         Eigen::Vector<float, 6> x = A.ldlt().solve(b); //ldlt because ATA not always Positive Definite
         
         
@@ -276,8 +267,8 @@ Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
 int main(){
 
     FreeImage_Initialise();
-    const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
+    const char* depth_map_dir_1 = "../../../data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
+    const char* depth_map_dir_2 = "../../../data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
 
     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
     frame1->Depth_Pyramid[0]->save_off_format("scene1.obj");
@@ -287,13 +278,13 @@ int main(){
 
     auto start = std::chrono::high_resolution_clock::now();
     std::cout << "starting timer" << std::endl;
-    ICP icp(*frame1, *frame2, 0.1f, 0.5f);
+    ICP icp(*frame1, *frame2, 0.05f, 0.5f);
     auto T = icp.pyramid_ICP(false);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
     std::cout << "time for execution: " << duration << std::endl; 
     
-    std::cout << T;
+    std::cout << T << std::endl;
 
     std::vector<Eigen::Vector3f> V_tk;
     frame1->Depth_Pyramid[0]->apply_transform(T , V_tk);
