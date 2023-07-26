@@ -7,10 +7,11 @@
 __device__
 void update_lower_triangle(float *A_jT, float* A){
     //column major update of lower triangle 
-    // printf("lower triangle updates: %f", A_jT[0] * A_jT[0]);
+    int i = 0;
     for(int col = 0; col < 6; ++col){
         for(int row = col; row < 6; ++row){
-            A[col * 6 + row] = A_jT[row] * A_jT[col];
+            A[i] = A_jT[row] * A_jT[col];
+            i++;
         }
     }
 }
@@ -73,16 +74,19 @@ void A_b_finder_block(
                 && !std::isnan(curr_V_k[i][0])){
                     if((curr_V_k[i] - prev_V_gk[idx_in_prev]).norm() <= d_thresh){
                         if(curr_N_k[i].dot(prev_N_gk[idx_in_prev]) >= a_thresh){
-                            Eigen::Vector3f s_i = curr_V_k[i]; // already transformed
-                            Eigen::Vector3f d_i = prev_V_gk[idx_in_prev];
-                            Eigen::Vector3f n_i = prev_N_gk[idx_in_prev];
+                            Eigen::Matrix<float, 3, 1, Eigen::ColMajor> s_i = curr_V_k[i]; // already transformed
+                            Eigen::Matrix<float, 3, 1, Eigen::ColMajor> d_i = prev_V_gk[idx_in_prev];
+                            Eigen::Matrix<float, 3, 1, Eigen::ColMajor> n_i = prev_N_gk[idx_in_prev];
+                            
                             Eigen::Matrix<float, 6, 1, Eigen::ColMajor> A_jT;
                             A_jT << s_i.cross(n_i), n_i;
+
                             Eigen::Matrix<float, 21, 1, Eigen::ColMajor> _A;
                             update_lower_triangle(A_jT.data(), _A.data());
+
                             // might want to want to change dA_arr from eigen matrix to float array
-                            // race condition problem maybe not sure => atomicAdd
-                            for(int element = 0; element < 20 ; ++element){
+                            // atomicAdd to stop race sync problems
+                            for(int element = 0; element < 21 ; ++element){
                                 atomicAdd(&dA_arr[id_y](element), _A(element));
                                 atomicAdd(&db_arr[id_y](element), A_jT(element) * (n_i.dot(d_i) - n_i.dot(s_i)));
                             }                            
@@ -216,13 +220,15 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             std::cout << "CUDA error: " << cudaGetErrorString(cudaStatus0) << std::endl;
         }
 
+        int i_temp = 0;
         for(int col = 0; col < 6; ++col){
             for(int row = col; row < 6; ++row){
-                A(row, col) = LA[col * 6 + row];
+                A(row, col) = LA[i_temp];
+                i_temp++;
             }
         }
-        // std::cout << A << std::endl;
-        // std::cout << b << std::endl;
+        std::cout << A << std::endl;
+        std::cout << b << std::endl;
         Eigen::Vector<float, 6> x = A.ldlt().solve(b); //ldlt because ATA not always Positive Definite
         
         
@@ -267,8 +273,8 @@ Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
 int main(){
 
     FreeImage_Initialise();
-    const char* depth_map_dir_1 = "../../../data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
-    const char* depth_map_dir_2 = "../../../data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
+    const char* depth_map_dir_1 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png";
+    const char* depth_map_dir_2 = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.226738.png";
 
     Frame_Pyramid* frame1 = new Frame_Pyramid(*FreeImage_Load(FreeImage_GetFileType(depth_map_dir_1), depth_map_dir_1));
     frame1->Depth_Pyramid[0]->save_off_format("scene1.obj");
