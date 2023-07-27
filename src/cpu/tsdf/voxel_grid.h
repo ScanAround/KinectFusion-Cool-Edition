@@ -17,6 +17,7 @@ private:
   std::vector<Voxel> grid;
   Voxel *cu_grid;
   size_t dimX, dimY, dimZ, dimYZ;
+  float ddx, ddy, ddz;
   Eigen::Vector3d gridSize;
   Eigen::Vector3d voxelSize;
   Eigen::Vector3d center;
@@ -87,6 +88,52 @@ public:
   Eigen::Vector2d projectiveTSDF(const Eigen::Vector3d& p, 
                                  Frame & curr_frame, 
                                  double mu);
+                                 
+
+  inline bool outOfVolume(unsigned int _x, unsigned int _y, unsigned int _z)
+	{
+		if (_x < 0 || _x > dimX - 1 || _y < 0 || _y > dimY - 1 || _z < 0 || _z > dimZ - 1)
+			return true;
+		return false;
+	}
+
+  inline Eigen::Vector3f worldToGrid(const Eigen::Vector3f& p)
+	{
+		Eigen::Vector3f coord(0.0, 0.0, 0.0);
+
+		coord[0] = (p[0] - min[0]) / (max[0] - min[0]) / ddx;
+		coord[1] = (p[1] - min[1]) / (max[1] - min[1]) / ddy;
+		coord[2] = (p[2] - min[2]) / (max[2] - min[2]) / ddz;
+
+		return coord;
+	}
+
+  inline Eigen::Vector3f gridToWorld(int i, int j, int k)
+	{
+		Eigen::Vector3f coord(0.0f, 0.0f, 0.0f);
+
+		coord[0] = min[0] + (max[0] - min[0]) * (float(i) * ddx);
+		coord[1] = min[1] + (max[1] - min[1]) * (float(j) * ddy);
+		coord[2] = min[2] + (max[2] - min[2]) * (float(k) * ddz);
+
+		return coord;
+	}
+
+  inline double get(const Eigen::Vector3i& position)
+  {
+    return grid[position[0]][position[1]][position[2]].tsdfValue;
+  }
+
+  inline double get(int _x, int _y, int _z)
+  {
+    return grid[_x][_y][_z].tsdfValue;
+  }
+
+  inline float getVoxelSize()
+  {
+    // Assuming isotropic voxels (ddx = ddy = ddz)
+    return ddx;
+  }
 };
 
 }
