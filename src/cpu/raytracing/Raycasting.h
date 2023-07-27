@@ -41,6 +41,8 @@ private:
 	const Eigen::Matrix3f extrinsincs;
 	const Eigen::Vector3f cameraCenter;
 
+	Vertex *vertices;
+
 	Eigen::Matrix3f intrinsics;
 
 	// Volume tsdf;
