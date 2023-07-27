@@ -122,12 +122,12 @@ public:
 
   inline double get(const Eigen::Vector3i& position)
   {
-    return grid[position[0]][position[1]][position[2]].tsdfValue;
+    return grid[position[0] *dimYZ + position[1]*dimZ +position[2]].tsdfValue;
   }
 
   inline double get(int _x, int _y, int _z)
   {
-    return grid[_x][_y][_z].tsdfValue;
+    return grid[_x*dimYZ + _y*dimZ + _z].tsdfValue;
   }
 
   inline float getVoxelSize()
