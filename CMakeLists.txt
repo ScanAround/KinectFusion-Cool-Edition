@@ -10,30 +10,34 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
+find_package(CUDA REQUIRED)
+
 include_directories(/usr/include)  # Path to the FreeImage headers
 
 add_library(KinectFusionLib
-  src/cpu/tsdf/voxel_grid.cpp
-  src/cpu/tsdf/voxel.cpp
-  src/cpu/tsdf/kinect_fusion_utility.cpp
-  src/cpu/frame/Frame.cpp
-  src/cpu/frame/Frame_Pyramid.cpp
-  src/cpu/icp/GPU_icp.cpp
+src/cpu/tsdf/voxel.cpp
+src/cpu/raytracing/Raycasting.cpp
+src/cpu/raytracing/Ray.cpp
+# src/cpu/tsdf/kinect_fusion_utility.cpp
+src/cpu/frame/Frame.cpp
+src/cpu/frame/Frame_Pyramid.cpp
+src/gpu/icp/icp.cu
+src/gpu/tsdf/tsdf.cu
 )
 
-add_executable(KinectFusionApp src/Kinect_Fusion.cpp)
+add_executable(KinectFusionApp_Cuda src/Kinect_Fusion.cu)
 
 # Linking your KinectFusion library to your executable
-target_link_libraries(KinectFusionApp KinectFusionLib /usr/lib/x86_64-linux-gnu/libfreeimage.so)  # Path to the FreeImage library
+target_link_libraries(KinectFusionApp_Cuda KinectFusionLib /usr/lib/x86_64-linux-gnu/libfreeimage.so)  # Path to the FreeImage library
 
 # Suppress deprecated warnings and some others
 # Narrowing warnings should be solved ideally
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
-  target_compile_options(KinectFusionApp PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
+  target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
-  target_compile_options(KinectFusionApp PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
+  target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
 endif()
 
 # This can be run as follows:
