@@ -40,6 +40,15 @@ void VoxelGrid::initializeGrid() {
       }
     }
   }
+
+  // Init voxel sizes and max and min positions
+  ddx = 1.0f / (dimX - 1);
+  ddy = 1.0f / (dimY - 1);
+  ddz = 1.0f / (dimZ - 1);
+
+  max = grid[dimX-1][dimY-1][dimZ-1].position;
+  min = grid[0][0][0].position;
+  
 }
   
 void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {

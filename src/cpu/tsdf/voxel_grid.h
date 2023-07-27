@@ -18,6 +18,7 @@ private:
   Voxel *cu_grid;
   size_t dimX, dimY, dimZ, dimYZ;
   float ddx, ddy, ddz;
+  Eigen::Vector3d min, max;
   Eigen::Vector3d gridSize;
   Eigen::Vector3d voxelSize;
   Eigen::Vector3d center;
