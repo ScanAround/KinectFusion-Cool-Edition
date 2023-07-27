@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <limits>
 #include <Eigen/Dense>
+
 typedef unsigned int uint;
 
 //! A regular volume dataset
@@ -55,6 +56,17 @@ public:
 		coord[0] = (p[0] - min[0]) / (max[0] - min[0]) / ddx;
 		coord[1] = (p[1] - min[1]) / (max[1] - min[1]) / ddy;
 		coord[2] = (p[2] - min[2]) / (max[2] - min[2]) / ddz;
+
+		return coord;
+	}
+
+	inline Eigen::Vector3f gridToWorld(int i, int j, int k)
+	{
+		Eigen::Vector3f coord(0.0f, 0.0f, 0.0f);
+
+		coord[0] = min[0] + (max[0] - min[0]) * (float(i) * ddx);
+		coord[1] = min[1] + (max[1] - min[1]) * (float(j) * ddy);
+		coord[2] = min[2] + (max[2] - min[2]) * (float(k) * ddz);
 
 		return coord;
 	}

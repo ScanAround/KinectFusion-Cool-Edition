@@ -1,7 +1,20 @@
 #include "voxel_grid.h"
+#include "../raytracing/Raycasting.h"
 #include "../mesher/Marching_Cubes.h"
 #include <algorithm>
 #include <chrono>
+
+// TODO: this can be moved to Raycasting if you want
+void writePointCloud(const std::string& filename, const std::vector<Eigen::Vector3f>& _vertices, const std::vector<Eigen::Vector3f>& _normals)
+{
+	std::ofstream file(filename);
+
+	for (unsigned int i = 0; i < _vertices.size(); ++i)
+	{
+		file << "v " << _vertices[i][0] << " " << _vertices[i][1] << " " << _vertices[i][2] << std::endl;
+		file << "vn " << _normals[i][0] << " " << _normals[i][1] << " " << _normals[i][2] << std::endl;
+	}
+}
 
 int main() {
 
@@ -48,6 +61,25 @@ std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
 double mu = 0.02;
 
 grid.updateGlobalTSDF(*frame1, mu);
+
+std::vector<Eigen::Vector3f> vertices;
+std::vector<Eigen::Vector3f> normals;
+
+Eigen::Matrix3f rotation; 
+rotation << float(pose(0, 0)), float(pose(0, 1)), float(pose(0, 2)),
+            float(pose(1, 0)), float(pose(1, 1)), float(pose(1, 2)),
+            float(pose(2, 0)), float(pose(2, 1)), float(pose(2, 2));
+
+Eigen::Vector3f translation(1.3434f, 0.6271f, 1.6606f);
+
+Raycasting r(grid, rotation, translation);
+
+r.castAll();
+
+vertices = r.getVertices();
+normals = r.getNormals();
+
+writePointCloud("pointcloud.obj", vertices, normals);
 
 mesher -> Mesher(grid, 0, "mesh2.off");
 

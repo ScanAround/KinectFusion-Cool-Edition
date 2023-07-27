@@ -5,8 +5,9 @@
 #include <Eigen/Dense>
 #include "Volume.h"
 #include "Ray.h"
+#include "../tsdf/voxel_grid.h"
 
-#define MAX_MARCHING_STEPS 5000
+#define MAX_MARCHING_STEPS 20000
 #define MINF -std::numeric_limits<float>::infinity()
 
 struct Vertex
@@ -21,7 +22,9 @@ class Raycasting
 {
 public:
 
-	Raycasting(const Volume& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter);
+	// Raycasting(const Volume& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter);
+
+	Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter);
 
 	Vertex castOne(const unsigned int i, const unsigned int j);
 
@@ -31,7 +34,8 @@ public:
 
 	// Eigen::Vector3f getInterpolated(const Ray& r, const double step);
 
-	std::vector<Vertex> getVertices();
+	std::vector<Eigen::Vector3f> getVertices();
+	std::vector<Eigen::Vector3f> getNormals();
 
 private:
 	const Eigen::Matrix3f extrinsincs;
@@ -39,7 +43,8 @@ private:
 
 	Eigen::Matrix3f intrinsics;
 
-	Volume tsdf;
+	// Volume tsdf;
+	kinect_fusion::VoxelGrid tsdf;
 
 	std::vector<Vertex> vertices;
 

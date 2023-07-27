@@ -3409,3 +3409,4 @@ src/tsdf/tsdf_gpu_debug
 src/cpu/icp/icp_debug
 .gitignore
 src/gpu/icp/icp_cu_debug
+src/cpu/tsdf/opencv_world480d.dll

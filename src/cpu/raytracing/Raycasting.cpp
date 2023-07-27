@@ -1,7 +1,17 @@
 #include "Raycasting.h"
 
 
-Raycasting::Raycasting(const Volume& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 
+/*Raycasting::Raycasting(const Volume& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 
+tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
+{
+    width = 640;
+    height = 480;
+    intrinsics <<   525.0f, 0.0f, 319.5f,
+                    0.0f, 525.0f, 239.5f,
+                    0.0f, 0.0f, 1.0f;
+}*/
+
+Raycasting::Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter):
 tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
 {
     width = 640;
@@ -39,7 +49,7 @@ Vertex Raycasting::castOne(const unsigned int i, const unsigned int j)
         {
             intersected = true;
             double dist = tsdf.get(p.cast<int>());
-            if (prevDist > 0 && dist <=0 && s > 0)
+            if (prevDist > 0 && dist <= 0 && s > 0)
             {	
                 Eigen::Vector3f n = computeNormal(p);
                 // Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
@@ -51,6 +61,7 @@ Vertex Raycasting::castOne(const unsigned int i, const unsigned int j)
                 return v;
             }
             prevDist = dist;
+            // step += (dist / tsdf.ddx) * 0.5f;
             step += 1.0f;
         }
         else
@@ -86,9 +97,9 @@ Vertex Raycasting::castOne(const unsigned int i, const unsigned int j)
 
 void Raycasting::castAll()
 {
-    for (unsigned int j = 0; j < height; j += 4)  // CHANGE TO 1
+    for (unsigned int j = 0; j < height; j += 6)  // CHANGE TO 1
 	{
-		for (unsigned int i = 0; i < width; i += 4)
+		for (unsigned int i = 0; i < width; i += 6)
 		{
             Vertex v = Raycasting::castOne(i, j);
             if (v.normal[0] == MINF && v.normal[1] == MINF && v.normal[2] == MINF)
@@ -130,7 +141,23 @@ Eigen::Vector3f Raycasting::computeNormal(const Eigen::Vector3f& p)
 }
 
 
-std::vector<Vertex> Raycasting::getVertices()
+std::vector<Eigen::Vector3f> Raycasting::getVertices()
 {
-    return vertices;
+    std::vector<Eigen::Vector3f> vrtxs;
+    for (Vertex& v : vertices)
+    {
+        Eigen::Vector3f posWorld = tsdf.gridToWorld(int(v.position[0]), int(v.position[1]), int(v.position[2]));
+        vrtxs.push_back(posWorld);
+    }
+    return vrtxs;
+}
+
+std::vector<Eigen::Vector3f> Raycasting::getNormals()
+{
+    std::vector<Eigen::Vector3f> nrmls;
+
+    for (Vertex& v : vertices)
+        nrmls.push_back(v.normal);
+
+    return nrmls;
 }
