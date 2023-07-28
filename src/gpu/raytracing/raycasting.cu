@@ -15,6 +15,18 @@ Eigen::Vector3f worldToGrid(const Eigen::Vector3f& p, const Eigen::Vector3d& min
 }
 
 __device__
+Eigen::Vector3f gridToWorld(const Eigen::Vector3i& p, const Eigen::Vector3d& min, const Eigen::Vector3d& max, float ddx, float ddy, float ddz)
+{
+	Eigen::Vector3f coord(0.0f, 0.0f, 0.0f);
+
+	coord[0] = min[0] + (max[0] - min[0]) * (float(p[0]) * ddx);
+	coord[1] = min[1] + (max[1] - min[1]) * (float(p[1]) * ddy);
+	coord[2] = min[2] + (max[2] - min[2]) * (float(p[2]) * ddz);
+
+	return coord;
+}
+
+__device__
 bool outOfVolume(int dx, int dy, int dz, Eigen::Vector3i p)
 {
 	int x = p[0];
@@ -76,18 +88,27 @@ void castOneCuda(double *tsdf, Vertex* vertices,
 			if (!outOfVolume(dx, dy, dz, pGrid))
 			{
 				intersected = true;
-				double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]];
-				if (prevDist > 0 && dist <= 0 && s > 0)
-				{	
-					Eigen::Vector3f n = computeNormal(tsdf, pGrid, dy, dz);
-					// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
-					Vertex v = {p, n};
-					vertices[j * width + i] = v;
-					break;
+				double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue;
+				if (!isnan(dist))
+				{
+					if (prevDist > 0 && dist <= 0 && s > 0)
+					{	
+						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
+						Eigen::Vector3f n;
+						if(computeNormal(n, tsdf, pGrid, dx, dy, dz))
+						{
+							Vertex v = {p, n};
+							vertices[j * width + i] = v;
+						}
+						
+						break;
+					}
+					prevDist = dist;
+					// step += dist * 0.25f; 
+					step += 1.0f;
 				}
-				prevDist = dist;
-				// step += dist * 0.25f;
-				step += 1.0f;
+				else
+					step += 1.0f;
 				
 			}
 			else
@@ -188,6 +209,25 @@ void Raycasting::castAllCuda()
 	cudaFree(volume);
 	cudaFree(verticesCuda);
 	// free(vertices);
+}
+
+std::vector<Eigen::Vector3f> Raycasting::getVertices()
+{
+    std::vector<Eigen::Vector3f> vrtxs;
+    for (unsigned int i = 0; i < width * height; ++i)
+        vrtxs.push_back(vertices[i].position);
+
+    return vrtxs;
+}
+
+std::vector<Eigen::Vector3f> Raycasting::getNormals()
+{
+    std::vector<Eigen::Vector3f> nrmls;
+
+    for (unsigned int i = 0; i < width * height; ++i)
+        nrmls.push_back(vertices[i].normal);
+
+    return nrmls;
 }
 
 void Raycasting::freeCuda() { free(vertices); }
