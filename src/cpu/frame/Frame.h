@@ -1,10 +1,12 @@
 #ifndef FRAME_H
 #define FRAME_H
 #include <iostream>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <FreeImage.h>
 #include <map>
 #include <memory>
+#include <vector>
+
 class Frame{
 public:
     Frame(FIBITMAP & dib, Eigen::Matrix4f T_gk, float sub_sampling_rate = 1.0f);
