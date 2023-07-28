@@ -19,7 +19,7 @@ src/cpu/tsdf/voxel.cpp
 src/cpu/raytracing/Raycasting.cpp
 src/cpu/raytracing/Ray.cpp
 # src/cpu/tsdf/kinect_fusion_utility.cpp
-src/cpu/frame/Frame.cpp
+src/cpu/frame/Frame.cu
 src/cpu/frame/Frame_Pyramid.cpp
 src/gpu/icp/icp.cu
 src/gpu/tsdf/tsdf.cu
