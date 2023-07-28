@@ -1,6 +1,6 @@
 #pragma once
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include "../tsdf/voxel_grid.h"
 #include "../tsdf/voxel.h"
 #include "Lookup_Tables.h"

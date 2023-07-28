@@ -1,4 +1,6 @@
+#include <fstream>
 #include "../../cpu/raytracing/Raycasting.h"
+#include "../../cpu/tsdf/voxel.h"
 
 /* CUDA */
 
@@ -27,35 +29,42 @@ Eigen::Vector3f gridToWorld(const Eigen::Vector3i& p, const Eigen::Vector3d& min
 }
 
 __device__
-bool outOfVolume(int dx, int dy, int dz, Eigen::Vector3i p)
+bool outOfVolume(int x, int y, int z, int dx, int dy, int dz)
 {
-	int x = p[0];
-	int y = p[1];
-	int z = p[2];
-
 	if (x < 0 || x > dx - 1 || y < 0 || y > dy - 1 || z < 0 || z > dz - 1)
 			return true;
 		return false;
 }
 
 __device__
-Eigen::Vector3f computeNormal(double* tsdf, const Eigen::Vector3i& p, int dy, int dz)
+bool computeNormal(Eigen::Vector3f& n, kinect_fusion::Voxel* tsdf, const Eigen::Vector3i& p, int dx, int dy, int dz)
 {
-	double deltaX = tsdf[(p[0] + 1)*dy*dz + p[1]*dz + p[2]] - tsdf[(p[0] - 1)*dy*dz + p[1]*dz + p[2]];
-	double deltaY = tsdf[p[0]*dy*dz + (p[1] + 1)*dz + p[2]] - tsdf[p[0]*dy*dz + (p[1] - 1)*dz + p[2]];
-	double deltaZ = tsdf[p[0]*dy*dz + p[1]*dz + (p[2] + 1)] - tsdf[p[0]*dy*dz + p[1]*dz + (p[2] - 1)];
-	
-	double gradX = deltaX / 2.0f;
-	double gradY = deltaY / 2.0f;
-	double gradZ = deltaZ / 2.0f;
+	if (!outOfVolume(p[0] + 1, p[1], p[2], dx, dy, dz) && 
+		!outOfVolume(p[0] - 1, p[1], p[2], dx, dy, dz) && 
+		!outOfVolume(p[0], p[1] + 1, p[2], dx, dy, dz) && 
+		!outOfVolume(p[0], p[1] - 1, p[2], dx, dy, dz) && 
+		!outOfVolume(p[0], p[1], p[2] + 1, dx, dy, dz) && 
+		!outOfVolume(p[0], p[1], p[2] - 1, dx, dy, dz))
+	{
+		double deltaX = tsdf[(p[0] + 1)*dy*dz + p[1]*dz + p[2]].tsdfValue - tsdf[(p[0] - 1)*dy*dz + p[1]*dz + p[2]].tsdfValue;
+		double deltaY = tsdf[p[0]*dy*dz + (p[1] + 1)*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + (p[1] - 1)*dz + p[2]].tsdfValue;
+		double deltaZ = tsdf[p[0]*dy*dz + p[1]*dz + (p[2] + 1)].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + (p[2] - 1)].tsdfValue;
+		
+		double gradX = deltaX / 2.0f;
+		double gradY = deltaY / 2.0f;
+		double gradZ = deltaZ / 2.0f;
 
-	Eigen::Vector3f normal(gradX, gradY, gradZ);
-	normal.normalize();
-	return normal;
+		n << gradX, gradY, gradZ;
+		n.normalize();
+
+		return true;
+	}
+
+	return false;
 }
 
 __global__
-void castOneCuda(double *tsdf, Vertex* vertices, 
+void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices, 
 			     Eigen::Matrix3f rotation, Eigen::Vector3f translation, Eigen::Matrix3f intrinsics, Eigen::Matrix3f intrinsicsInv,
 			     Eigen::Vector3d min, Eigen::Vector3d max, 
 			     int width, int height, int dx, int dy, int dz, float ddx, float ddy, float ddz)
@@ -85,7 +94,7 @@ void castOneCuda(double *tsdf, Vertex* vertices,
 			Eigen::Vector3f p = rayOrigin + step * rayDir;
 			Eigen::Vector3i pGrid = p.cast<int>();
 			
-			if (!outOfVolume(dx, dy, dz, pGrid))
+			if (!outOfVolume(pGrid[0], pGrid[1], pGrid[2], dx, dy, dz))
 			{
 				intersected = true;
 				double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue;
@@ -97,7 +106,8 @@ void castOneCuda(double *tsdf, Vertex* vertices,
 						Eigen::Vector3f n;
 						if(computeNormal(n, tsdf, pGrid, dx, dy, dz))
 						{
-							Vertex v = {p, n};
+							Eigen::Vector3f pWorld = gridToWorld(pGrid, min, max, ddx, ddy, ddz);
+							Vertex v = {pWorld, n};
 							vertices[j * width + i] = v;
 						}
 						
@@ -126,7 +136,7 @@ void castOneCuda(double *tsdf, Vertex* vertices,
 
 /* DEFINITIONS FROM RAYCASTING.H */
 
-Raycasting::Raycasting(const Volume& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 
+Raycasting::Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 
 tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
 {
     width = 640;
@@ -151,16 +161,9 @@ tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
 void Raycasting::writePointCloud(const std::string& filename)
 {
     std::ofstream file(filename);
-    std::ofstream file(filename);
 
 	for (unsigned int i = 0; i < width * height; ++i)
-	for (unsigned int i = 0; i < width * height; ++i)
 	{
-		if (vertices[i].position[0] != MINF && vertices[i].position[1] != MINF && vertices[i].position[2] != MINF)
-		{
-			file << "v " << vertices[i].position[0] << " " << vertices[i].position[1] << " " << vertices[i].position[2] << std::endl;
-			file << "vn " << vertices[i].normal[0] << " " << vertices[i].normal[1] << " " << vertices[i].normal[2] << std::endl;
-		}
 		if (vertices[i].position[0] != MINF && vertices[i].position[1] != MINF && vertices[i].position[2] != MINF)
 		{
 			file << "v " << vertices[i].position[0] << " " << vertices[i].position[1] << " " << vertices[i].position[2] << std::endl;
@@ -173,12 +176,11 @@ void Raycasting::castAllCuda()
 {
     // Vertex *vertices;
 	Vertex *verticesCuda;
-	double *volume;
+	kinect_fusion::Voxel *volume;
 
 	// vertices = (Vertex*)malloc(width * height * sizeof(Vertex));
-	// vertices = (Vertex*)malloc(width * height * sizeof(Vertex));
 
-	cudaError_t cudaStatusVol = cudaMallocManaged(&volume, tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(double));
+	cudaError_t cudaStatusVol = cudaMallocManaged(&volume, tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel));
 	cudaError_t cudaStatusVertices = cudaMallocManaged(&verticesCuda, width * height * sizeof(Vertex));
 	if(cudaStatusVol != cudaSuccess)
 	{
@@ -189,7 +191,7 @@ void Raycasting::castAllCuda()
     	std::cout << "Problem in CudaMallocVertices: " << cudaGetErrorString(cudaStatusVertices) << std::endl;
     }
 
-	auto cudaCpyVol = cudaMemcpy(volume, tsdf.vol, tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(double), cudaMemcpyHostToDevice);
+	auto cudaCpyVol = cudaMemcpy(volume, tsdf.getGrid().data(), tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel), cudaMemcpyHostToDevice);
 	auto cudaCpyVertices = cudaMemcpy(verticesCuda, vertices, width * height * sizeof(Vertex), cudaMemcpyHostToDevice);
 	if(cudaCpyVol != cudaSuccess)
 	{
@@ -201,22 +203,23 @@ void Raycasting::castAllCuda()
     }
 
 	castOneCuda <<<height, width>>> (volume, verticesCuda, 
-							     extrinsincs, cameraCenter, intrinsics, intrinsics.inverse(),
-			 				     tsdf.getMin(), tsdf.getMax(), 
-			 				     width, height, tsdf.getDimX(), tsdf.getDimY(), tsdf.getDimZ(), tsdf.getSizeX(), tsdf.getSizeY(), tsdf.getSizeZ());
+							         extrinsincs, cameraCenter, intrinsics, intrinsics.inverse(),
+			 				         tsdf.getMin(), tsdf.getMax(), 
+			 				         width, height, tsdf.getDimX(), tsdf.getDimY(), tsdf.getDimZ(), tsdf.getSizeX(), tsdf.getSizeY(), tsdf.getSizeZ());
 	cudaDeviceSynchronize();
 
 	auto cudaCpy = cudaMemcpy(vertices, verticesCuda, width * height * sizeof(Vertex), cudaMemcpyDeviceToHost);
 	if(cudaCpy != cudaSuccess)
 	{
-    	std::cout << "Problem in Copying from device: " << cudaCpy <<std::endl;
-    }
+     	std::cout << "Problem in Copying from device: " << cudaGetErrorString(cudaCpy) <<std::endl;
+	}
 
 	// writePointCloud(".\\cuda_out\\pointcloud.obj", vertices, width * height);
 
 	cudaFree(volume);
 	cudaFree(verticesCuda);
 	// free(vertices);
+	// freeCuda();
 }
 
 std::vector<Eigen::Vector3f> Raycasting::getVertices()
@@ -239,3 +242,5 @@ std::vector<Eigen::Vector3f> Raycasting::getNormals()
 }
 
 void Raycasting::freeCuda() { free(vertices); }
+
+Raycasting::~Raycasting() { freeCuda(); }

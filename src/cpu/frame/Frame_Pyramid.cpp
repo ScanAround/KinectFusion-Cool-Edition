@@ -2,7 +2,6 @@
 #include "Frame.h"
 #include <iostream>
 #include <FreeImage.h>
-#include <eigen3/Eigen/Dense>
 #include <cmath>
 
 Frame_Pyramid::Frame_Pyramid(FIBITMAP & dib){

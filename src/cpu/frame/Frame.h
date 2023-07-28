@@ -1,11 +1,16 @@
 #ifndef FRAME_H
 #define FRAME_H
+
+#include <windows.h>
 #include <iostream>
 #include <Eigen/Dense>
 #include <FreeImage.h>
 #include <map>
 #include <memory>
 #include <vector>
+
+#undef min
+#undef max
 
 class Frame{
 public:

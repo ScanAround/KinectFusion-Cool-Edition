@@ -68,7 +68,7 @@ void update(kinect_fusion::Voxel *cu_grid,
     kinect_fusion::Voxel& voxel = cu_grid[id_x*dimYZ + id_y*dimZ + id_z];
     Eigen::Vector3d p(voxel.position); // The point in the global frame
     double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, t, R, width, height, mu);
-    if(std::isnan(voxel.tsdfValue)){
+    if(isnan(voxel.tsdfValue)){
       voxel.tsdfValue = F_R;
     }
     else{

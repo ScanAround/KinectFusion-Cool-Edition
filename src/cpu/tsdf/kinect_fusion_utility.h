@@ -1,6 +1,7 @@
 #pragma once
 
-#include <eigen3/Eigen/Dense>
+#include <windows.h>
+#include <Eigen/Dense>
 #include <fstream>
 #include <sstream>
 #include <string>

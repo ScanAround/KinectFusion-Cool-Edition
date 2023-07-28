@@ -31,8 +31,8 @@ int main(){
         prev_r.castAll();
         Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
         
-        prev_frame.Depth_Pyramid[0]->save_off_format("outputs\\point_clouds\\pc" +std::to_string(file_idx \ 2) + ".obj");
-        prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs\\point_clouds\\pc_G" +std::to_string(file_idx \ 2) + ".obj");
+        prev_frame.Depth_Pyramid[0]->save_off_format("outputs\\point_clouds\\pc_previous" + std::to_string(file_idx) + ".obj");
+        prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs\\point_clouds\\pc_G_previous" + std::to_string(file_idx) + ".obj");
 
         Frame_Pyramid curr_frame(s_dir + "\\" + filenames[file_idx + 1]);
         curr_frame.set_T_gk(T); // done so converging is faster (theoretically + still testing)
@@ -42,9 +42,9 @@ int main(){
         
         grid.updateGlobalTSDF(*curr_frame.Depth_Pyramid[0], mu);
         
-        curr_frame.Depth_Pyramid[0]->save_off_format("outputs\\point_clouds\\pc" +std::to_string(file_idx \ 2) + ".obj");
-        curr_frame.Depth_Pyramid[0]->save_G_off_format("outputs\\point_clouds\\pc_G" +std::to_string(file_idx \ 2) + ".obj");
+        curr_frame.Depth_Pyramid[0]->save_off_format("outputs\\point_clouds\\pc" +std::to_string(file_idx) + ".obj");
+        curr_frame.Depth_Pyramid[0]->save_G_off_format("outputs\\point_clouds\\pc_G" +std::to_string(file_idx) + ".obj");
 
-        mesher -> Mesher(grid, 0, "outputs\\meshes\\mesh" + std::to_string(file_idx \ 2) + ".off");
+        mesher -> Mesher(grid, 0, "outputs\\meshes\\mesh" + std::to_string(file_idx) + ".off");
     }
 }

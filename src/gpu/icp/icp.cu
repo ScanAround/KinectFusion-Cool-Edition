@@ -69,9 +69,9 @@ void A_b_finder_block(
             // normals aren't calculated in last row so check if pixel is before last row
             if(idx_in_prev < (height-1) * width){
                 // checking if normals are valid in previous frame
-                if(!std::isnan(prev_N_gk[idx_in_prev][0]) 
-                && !std::isnan(prev_V_gk[idx_in_prev][0])
-                && !std::isnan(curr_V_k_t[0])){
+                if(!isnan(prev_N_gk[idx_in_prev][0]) 
+                && !isnan(prev_V_gk[idx_in_prev][0])
+                && !isnan(curr_V_k_t[0])){
                     if((curr_V_k_t - prev_V_gk[idx_in_prev]).norm() <= d_thresh){
                         if(curr_N_k_t.dot(prev_N_gk[idx_in_prev]) >= a_thresh){
                             Eigen::Matrix<float, 3, 1, Eigen::ColMajor> s_i = curr_V_k_t; // already transformed

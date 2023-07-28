@@ -49,8 +49,8 @@ private:
 	const Eigen::Matrix3f extrinsincs;
 	const Eigen::Vector3f cameraCenter;
 
-	// Vertex *vertices;
-	std::vector<Vertex> vertices;
+	Vertex *vertices;
+	// std::vector<Vertex> vertices;
 
 	Eigen::Matrix3f intrinsics;
 
