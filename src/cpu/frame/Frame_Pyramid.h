@@ -2,7 +2,7 @@
 #define FRAME_PYRAMID_H
 #include "Frame.h"
 #include <iostream>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <FreeImage.h> 
 
 

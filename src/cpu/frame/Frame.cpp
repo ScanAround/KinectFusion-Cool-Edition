@@ -1,6 +1,5 @@
 #include "Frame.h"
 #include <iostream>
-#include <eigen3/Eigen/Dense>
 #include <FreeImage.h>
 #include <fstream>
 #include <math.h>
