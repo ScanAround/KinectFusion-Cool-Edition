@@ -184,14 +184,21 @@ std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
 }
 
 void Frame::process_image(float sigma_r , float sigma_s ,  int filter_size, bool apply_bilateral){
-    if(apply_bilateral){
-        filtered_dib = Apply_Bilateral(sigma_r, sigma_s, filter_size);
+   if(apply_bilateral){
+       float* filtered_img = bilateralFilter(10, 0.3, 0.3);
     }
     else{
-        filtered_dib = dib;
-        Depth_k = Raw_k;
+    float* filtered_img= Depth_k
     }
-    // FreeImage_Save(FREE_IMAGE_FORMAT::FIF_PNG, filtered_image,"/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/dummy_shiz/bilateral_filter.png");
+
+    int* M_k1_new = new int[height * width];
+  
+  // cuda
+    Eigen::Vector3f* V_k_new=calculate_Vks_new(filtered_img, M_k1_new);
+    calculate_Nks_new(V_k_new,M_k1_new);
+    
+   //cpu 
     calculate_Vks();
     calculate_Nks();
+   // save_off_format("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/scene2_cpu.obj");
 }

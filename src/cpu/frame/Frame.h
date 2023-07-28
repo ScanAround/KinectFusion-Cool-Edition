@@ -19,11 +19,21 @@ public:
     
     ~Frame();
 
+    // cpu
     FIBITMAP * Apply_Bilateral(const float & sigma_r, const float & float_s, const int & filter_size);
 
+    // cuda
+    float* bilateralFilter( int diameter, double sigmaS, double sigmaR);
+
+    // cpu
     std::vector<Eigen::Vector3f> calculate_Vks();
 
     std::vector<Eigen::Vector3f> calculate_Nks();
+
+    // cuda
+    Eigen::Vector3f* Frame::calculate_Vks_new(float* filtered_img, int* M_k1_new);
+
+    Eigen::Vector3f* Frame::calculate_Nks_new(Eigen::Vector3f* V_k_new, int* M_k_1);
 
     void process_image(float sigma_r = 0.01, float sigma_s = 3.0,  int filter_size = 15, bool apply_bilateral = true);
 
