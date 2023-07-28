@@ -154,6 +154,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
 
 }
 
+
 // int main(){
 
 // auto pose_f = Eigen::Matrix4f::Identity();

@@ -46,8 +46,8 @@ void VoxelGrid::initializeGrid() {
   ddy = 1.0f / (dimY - 1);
   ddz = 1.0f / (dimZ - 1);
 
-  max = grid[dimX-1][dimY-1][dimZ-1].position;
-  min = grid[0][0][0].position;
+  max = grid[(dimX-1)*dimYZ + (dimY-1)*dimZ + (dimZ-1)].position;
+  min = grid[0].position;
   
 }
   

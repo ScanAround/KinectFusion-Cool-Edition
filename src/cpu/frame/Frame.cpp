@@ -6,22 +6,19 @@
 #include <math.h>
 #include <array>
 #include <vector>
-
 #define MAXTHRESHOLD 10
 #define MINF -std::numeric_limits<float>::infinity()
+
 
 inline double Frame::N_sigma(const float& sigma, const float &t){
     return exp(-std::pow(t,2)*std::pow(sigma,-2));
 }
-
 FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, const int & filter_size){
     //need to clean this shit up 
     Eigen::Matrix3f K_calibration_inverse = K_calibration.inverse();
     FIBITMAP * result;
     result = FreeImage_Allocate(width, height, 8); // monochrome image therefore 8 bytes
     BYTE * image_data = FreeImage_GetBits(result);
-
-
     for(int i = static_cast<int>(filter_size/2) ; i < height-(static_cast<int>(filter_size/2)); ++i){
         for(int j = static_cast<int>(filter_size/2); j < width-(static_cast<int>(filter_size/2)); ++j){
             float sum = 0.0f;
@@ -45,11 +42,9 @@ FIBITMAP * Frame::Apply_Bilateral(const float & sigma_r, const float & sigma_s, 
         }
     }
     return result;
-
 }
 
 void Frame::save_off_format(const std::string & where_to_save){
-
     std::ofstream OffFile(where_to_save);
     for(auto i : M_k1){
         if(abs(V_k[i][0]) < MAXTHRESHOLD){
@@ -67,7 +62,6 @@ void Frame::save_off_format(const std::string & where_to_save){
 
 void Frame::save_G_off_format(const std::string & where_to_save)
 {
-
         std::ofstream OffFile(where_to_save);
         this -> apply_G_transform();
         for(auto i : M_k1){
@@ -91,7 +85,6 @@ dib(FreeImage_ConvertToFloat(&dib)), T_gk(T_gk){
     height = FreeImage_GetHeight(this->dib);
     
     Depth_k = new float[width*height]; // have to rescale according to the data 
-
     Raw_k = (float *) FreeImage_GetBits(this->dib) ; // have to rescale according to the data 
     
     K_calibration  <<  525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
@@ -101,28 +94,21 @@ dib(FreeImage_ConvertToFloat(&dib)), T_gk(T_gk){
 
 Frame::Frame(const char * image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate): 
 dib(FreeImage_ConvertToFloat(FreeImage_Load(FreeImage_GetFileType(image_dir), image_dir))){
-
     FreeImage_Initialise();
-
     width = FreeImage_GetWidth(this->dib);
     height = FreeImage_GetHeight(this->dib);
     
     Depth_k = new float[width*height]; // have to rescale according to the data 
-
     Raw_k = (float *) FreeImage_GetBits(this->dib) ; // have to rescale according to the data 
-
     K_calibration  <<  525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
                         0.0f, 525.0f / sub_sampling_rate, 239.5f/ sub_sampling_rate,
                         0.0f, 0.0f, 1.0f;
-
     this -> T_gk = T_gk;
-
     FreeImage_DeInitialise();
 }
 
 Frame::Frame(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width, int height):
 width(width), height(height), T_gk(T_gk), V_gk(V_gks), N_gk(N_gks){
-
     K_calibration  <<  525.0f , 0.0f, 319.5f,
                         0.0f, 525.0f, 239.5f,
                         0.0f, 0.0f, 1.0f;
@@ -145,10 +131,8 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks(){
         for(int j = 0; j < width; j++){
             u_dot << j, i ,1;
             if(Depth_k[i*width + j] == MINF || Depth_k[i*width + j] <= 0.0f){
-
                 V_k.push_back(Eigen::Vector3f(MINF, MINF, MINF));
                 M_k0.push_back(i*width+j);
-
             }
             else{
                 
@@ -184,21 +168,14 @@ std::vector<Eigen::Vector3f> Frame::calculate_Nks(){
 }
 
 void Frame::process_image(float sigma_r , float sigma_s ,  int filter_size, bool apply_bilateral){
-   if(apply_bilateral){
-       float* filtered_img = bilateralFilter(10, 0.3, 0.3);
+    if(apply_bilateral){
+        filtered_dib = Apply_Bilateral(sigma_r, sigma_s, filter_size);
     }
     else{
-    float* filtered_img= Depth_k
+        filtered_dib = dib;
+        Depth_k = Raw_k;
     }
-
-    int* M_k1_new = new int[height * width];
-  
-  // cuda
-    Eigen::Vector3f* V_k_new=calculate_Vks_new(filtered_img, M_k1_new);
-    calculate_Nks_new(V_k_new,M_k1_new);
-    
-   //cpu 
+    // FreeImage_Save(FREE_IMAGE_FORMAT::FIF_PNG, filtered_image,"/mnt/c/Users/asnra/Desktop/Coding/KinectFusion/KinectFusion-Cool-Edition/data/dummy_shiz/bilateral_filter.png");
     calculate_Vks();
     calculate_Nks();
-   // save_off_format("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/scene2_cpu.obj");
 }

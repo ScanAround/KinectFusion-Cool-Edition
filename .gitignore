@@ -3431,3 +3431,17 @@ build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Ray.cpp.o
 build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Ray.cpp.o.d
 build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Raycasting.cpp.o
 src/cuda_out
+build/CMakeFiles/KinectFusionApp_Cuda.dir/compiler_depend.internal
+build/CMakeFiles/KinectFusionApp_Cuda.dir/src/Kinect_Fusion.cpp.o
+build/CMakeFiles/KinectFusionApp_Cuda.dir/src/Kinect_Fusion.cpp.o.d
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/frame/Frame.cpp.o
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/frame/Frame.cpp.o.d
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/tsdf/kinect_fusion_utility.cpp.o
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/tsdf/kinect_fusion_utility.cpp.o.d
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/tsdf/voxel_grid.cpp.o
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/tsdf/voxel_grid.cpp.o.d
+build/CMakeFiles/Progress/4
+build/CMakeFiles/Progress/5
+build/CMakeFiles/Progress/6
+build/CMakeFiles/Progress/7
+build/CMakeFiles/Progress/8

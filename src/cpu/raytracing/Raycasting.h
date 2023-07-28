@@ -1,7 +1,7 @@
 #ifndef RAYCASTING_H
 #define RAYCASTING_H
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <vector>
 // #include "Volume.h"
 // #include "Ray.h"
@@ -49,7 +49,8 @@ private:
 	const Eigen::Matrix3f extrinsincs;
 	const Eigen::Vector3f cameraCenter;
 
-	Vertex *vertices;
+	// Vertex *vertices;
+	std::vector<Vertex> vertices;
 
 	Eigen::Matrix3f intrinsics;
 

@@ -16,17 +16,22 @@ find_package(CUDA REQUIRED)
 include_directories(/usr/include)  # Path to the FreeImage headers
 
 add_library(KinectFusionLib
-src/cpu/tsdf/voxel.cpp
-src/cpu/raytracing/Raycasting.cpp
-src/cpu/raytracing/Ray.cpp
-# src/cpu/tsdf/kinect_fusion_utility.cpp
 src/gpu/frame/frame.cu
-src/cpu/frame/Frame_Pyramid.cpp
+src/gpu/raytracing/raycasting.cu
 src/gpu/icp/icp.cu
 src/gpu/tsdf/tsdf.cu
+
+src/cpu/raytracing/Raycasting.cpp
+# src/cpu/tsdf/voxel_grid.cpp
+# src/cpu/frame/Frame.cpp
+src/cpu/tsdf/voxel.cpp
+src/cpu/raytracing/Ray.cpp
+src/cpu/frame/Frame_Pyramid.cpp
+src/cpu/tsdf/kinect_fusion_utility.cpp
 )
 
-add_executable(KinectFusionApp_Cuda src/Kinect_Fusion.cu)
+add_executable(KinectFusionApp_Cuda 
+  src/Kinect_Fusion.cpp)
 
 # Linking your KinectFusion library to your executable
 target_link_libraries(KinectFusionApp_Cuda KinectFusionLib /usr/lib/x86_64-linux-gnu/libfreeimage.so)  # Path to the FreeImage library

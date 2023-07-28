@@ -167,6 +167,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks()
 
 	return V_k;
 }
+
 std::vector<Eigen::Vector3f>  Frame::calculate_Nks()
 {
 	N_k.resize(width * height);
@@ -202,28 +203,6 @@ std::vector<Eigen::Vector3f>  Frame::calculate_Nks()
 
 	return N_k;
 }
-
-
-// Function to swap two rows in a flattened image
-void swapRows(float* image, int width, int row1, int row2) {
-	for (int col = 0; col < width; col++) {
-		std::swap(image[row1 * width + col], image[row2 * width + col]);
-	}
-}
-
-// Function to create the symmetric image along the X-axis (horizontal flip)
-float* symmetricImageX(float* image, int width, int height) {
-	int topRow = 0;
-	int bottomRow = height - 1;
-
-	while (topRow < bottomRow) {
-		swapRows(image, width, topRow, bottomRow);
-		topRow++;
-		bottomRow--;
-	}
-	return image;
-}
-
 
 float* Frame::bilateralFilter_cu(int diameter, double sigmaS, double sigmaR) {
 	float* depthMap = new float[height * width];
@@ -283,7 +262,6 @@ void Frame::save_off_format(const std::string& where_to_save) {
 	OffFile.close();
 }
 
-
 Frame::Frame(FIBITMAP& dib, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
 	dib(FreeImage_ConvertToFloat(&dib)), T_gk(T_gk) {
 
@@ -319,25 +297,12 @@ Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rat
 
 	FreeImage_DeInitialise();
 }
-/*
-Frame::Frame(Eigen::Vector3f* V_gks, Eigen::Vector3f* N_gks, Eigen::Matrix4f T_gk, int width, int height) :
-	width(width), height(height), T_gk(T_gk), V_gk(V_gks), N_gk(N_gks) {
 
-	K_calibration << 525.0f, 0.0f, 319.5f,
-		0.0f, 525.0f, 239.5f,
-		0.0f, 0.0f, 1.0f;
-
-}
-*/
 Frame::~Frame() {
 	if (dib != nullptr) { delete dib; }
 	if (Depth_k != nullptr) { delete[] Depth_k; }
 	// if(Raw_k != nullptr){delete Raw_k;}
 }
-
-
-
-
 
 void Frame::process_image(float sigma_r, float sigma_s, int filter_size, bool apply_bilateral) {
 	
@@ -355,3 +320,28 @@ void Frame::process_image(float sigma_r, float sigma_s, int filter_size, bool ap
 
 }
 
+Frame::Frame(std::vector<Eigen::Vector3f> V_gks, std::vector<Eigen::Vector3f> N_gks, Eigen::Matrix4f T_gk, int width, int height):
+width(width), height(height), T_gk(T_gk), V_gk(V_gks), N_gk(N_gks){
+    K_calibration  <<  525.0f , 0.0f, 319.5f,
+                        0.0f, 525.0f, 239.5f,
+                        0.0f, 0.0f, 1.0f;
+    
+}
+
+void Frame::save_G_off_format(const std::string & where_to_save)
+{
+        std::ofstream OffFile(where_to_save);
+        this -> apply_G_transform();
+        for(auto i : M_k1){
+            if(abs(V_gk[i][0]) < MAXTHRESHOLD){
+                OffFile << "v " << V_gk[i][0] << " " << V_gk[i][1] << " " << V_gk[i][2] << std::endl; 
+                if(!std::isnan(N_gk[i][0]) && !std::isnan(N_gk[i][1]) && !std::isnan(N_gk[i][2])){
+                    OffFile << "vn " << N_gk[i][0] << " " << N_gk[i][1] << " " << N_gk[i][2] << std::endl;
+                }
+                else{
+                    OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
+                } 
+            }
+        }
+        OffFile.close();
+    }

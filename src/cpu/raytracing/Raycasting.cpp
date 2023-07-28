@@ -1,4 +1,5 @@
 #include "Raycasting.h"
+#include "Ray.h"
 
 
 /*Raycasting::Raycasting(const Volume& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 

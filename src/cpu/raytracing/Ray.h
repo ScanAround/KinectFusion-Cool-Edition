@@ -1,7 +1,7 @@
 #ifndef RAY_H
 #define RAY_H
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 
 class Ray
 {
