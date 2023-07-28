@@ -1,21 +1,41 @@
-# Cuda's Cmake
-cmake_minimum_required(VERSION 3.10)
-project(KinectFusion)
+cmake_minimum_required(VERSION 3.6)
 
-set(CMAKE_CXX_STANDARD 20)  # Use C++20
-set(CMAKE_BUILD_TYPE Debug)  # Set build type to Debug which will automatically add -g flag
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
+set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE TYPE INTERNAL FORCE)
 
-# In case you are using any additional library add them here
-# If you are using Eigen, assuming it is installed in a standard location, uncomment these lines:
+project(kinect LANGUAGES C CXX CUDA)
+
+# Options
+set(LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Exercises/Libs CACHE PATH "Path to lib folder")
+set(Eigen3_DIR ${LIBRARY_DIR}/Eigen/share/eigen3/cmake CACHE PATH "Path to installed Eigen")
+# Use pre-compiled libraries on Windows
+if(WIN32)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(FreeImage_INCLUDE_DIR ${LIBRARY_DIR}/FreeImage-3.18.0/Dist/x64/ CACHE PATH "Path to FreeImage header file")
+        set(FreeImage_LIBRARY_DIR ${LIBRARY_DIR}/FreeImage-3.18.0/Dist/x64/ CACHE PATH "Path to FreeImage .lib/.dll folder")
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        set(FreeImage_INCLUDE_DIR ${LIBRARY_DIR}/FreeImage-3.18.0/Dist/x32/ CACHE PATH "Path to FreeImage header file")
+        set(FreeImage_LIBRARY_DIR ${LIBRARY_DIR}/FreeImage-3.18.0/Dist/x32/ CACHE PATH "Path to FreeImage .lib/.dll folder")
+    endif()
+endif(WIN32)
+# Set C++ flags
+set(CMAKE_CXX_STANDARD 14)
+
+find_package(CUDAToolkit REQUIRED)
 find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
 
-find_package(CUDA REQUIRED)
+# Define header and source files
+set(HEADERS
+    src/cpu/frame/Frame.h
+src/cpu/frame/Frame_Pyramid.h
+    src/cpu/icp/ICP.h
+src/cpu/mesher/Marching_Cubes.h
+src/cpu/mesher/Lookup_Tables.h
+src/cpu/raytracing/Raycasting.h
+src/cpu/raytracing/Volume.h
+src/cpu/raytracing/Ray.h
+)
 
-include_directories(/usr/include)  # Path to the FreeImage headers
-
-add_library(KinectFusionLib
+set(SOURCES
 src/gpu/frame/frame.cu
 src/gpu/raytracing/raycasting.cu
 src/gpu/icp/icp.cu
@@ -28,27 +48,27 @@ src/cpu/tsdf/voxel.cpp
 src/cpu/raytracing/Ray.cpp
 src/cpu/frame/Frame_Pyramid.cpp
 src/cpu/tsdf/kinect_fusion_utility.cpp
+src/Kinect_Fusion.cpp
 )
 
-add_executable(KinectFusionApp_Cuda 
-  src/Kinect_Fusion.cpp)
+link_directories(${FreeImage_LIBRARY_DIR})
+add_executable(kinect ${HEADERS} ${SOURCES})
+target_link_libraries(kinect freeimage Eigen3::Eigen )
+target_include_directories(kinect PUBLIC  ${FreeImage_INCLUDE_DIR} )
 
-# Linking your KinectFusion library to your executable
-target_link_libraries(KinectFusionApp_Cuda KinectFusionLib /usr/lib/x86_64-linux-gnu/libfreeimage.so)  # Path to the FreeImage library
-
-# Suppress deprecated warnings and some others
-# Narrowing warnings should be solved ideally
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
-  target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
-  target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
-endif()
-
-# This can be run as follows:
-# mkdir build
-# cd build
-# cmake ..
-# make
-# ./KinectFusionApp
+# Visual Studio properties
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT kinect)
+set_property(TARGET kinect PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/)
+set_property(TARGET kinect PROPERTY CUDA_ARCHITECTURES native)
+set_target_properties(kinect 
+   PROPERTIES
+       CUDA_SEPARABLE_COMPILATION ON
+       CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+    # On Windows copy dll to executable folder
+    add_custom_command(TARGET kinect POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${FreeImage_LIBRARY_DIR}/FreeImage.dll"
+            ${CMAKE_BINARY_DIR})
+    	
+    
