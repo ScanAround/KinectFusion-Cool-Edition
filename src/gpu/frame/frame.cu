@@ -1,27 +1,13 @@
-#include "GPU_icp.h"
-#include "Frame_Pyramid.h"
+#include "../../cpu/frame/Frame.h"
+#include "../../cpu/frame/Frame_Pyramid.h"
 #include <iostream>
 #include <fstream>
 #include <FreeImage.h>
 #include <vector>
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #ifndef CUDACC
 #define CUDACC
 #endif
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <cusolverDn.h>
-#include <iostream>
-#include <Eigen/Dense>
-#include <FreeImage.h>
-#include <fstream>
-#include <math.h>
-#include <array>
-#include <vector>
 #define MINF -std::numeric_limits<float>::infinity()
 
 #define MAXTHRESHOLD 10
@@ -239,7 +225,7 @@ float* symmetricImageX(float* image, int width, int height) {
 }
 
 
-float* Frame::bilateralFilter(int diameter, double sigmaS, double sigmaR) {
+float* Frame::bilateralFilter_cu(int diameter, double sigmaS, double sigmaR) {
 	float* depthMap = new float[height * width];
 	float* filteredImage = new float[height * width];
 	float* filteredImage_final = new float[height * width];
@@ -356,7 +342,7 @@ Frame::~Frame() {
 void Frame::process_image(float sigma_r, float sigma_s, int filter_size, bool apply_bilateral) {
 	
 	if (apply_bilateral) {
-		Depth_k = bilateralFilter(15, 3.0, 0.01);
+		Depth_k = bilateralFilter_cu(15, 3.0, 0.01);
 	}
 	else
 	{
