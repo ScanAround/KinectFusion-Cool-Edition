@@ -1,3 +1,4 @@
+# Cuda's Cmake
 cmake_minimum_required(VERSION 3.10)
 project(KinectFusion)
 
