@@ -95,7 +95,7 @@ Vertex Raycasting::castOne(const unsigned int i, const unsigned int j)
     return v;		
 }
 
-
+/*
 void Raycasting::castAll()
 {
     for (unsigned int j = 0; j < height; j += 6)  // CHANGE TO 1
@@ -108,7 +108,7 @@ void Raycasting::castAll()
             vertices.push_back(v);
         }
     }
-}
+}*/
 
 
 Eigen::Vector3f Raycasting::computeNormal(const Eigen::Vector3f& p)

@@ -9,7 +9,7 @@ int main(){
     //initiating mesher
     std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
     
-    std::string s_dir = "data\\rgbd_dataset_freiburg1_xyz\\depth"; 
+    std::string s_dir = "..\\..\\Exercises\\Data\\rgbd_dataset_freiburg1_xyzrgbd_dataset_freiburg1_xyz\\depth"; 
     auto filenames = kinect_fusion::utility::getPngFilesInDirectory(s_dir);
     
     Frame_Pyramid curr_frame(s_dir + "\\" + filenames[0]);
@@ -28,7 +28,7 @@ int main(){
 
     for(int file_idx = 0; file_idx < filenames.size(); ++file_idx){
         Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
-        prev_r.castAll();
+        prev_r.castAllCuda();
         Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
         
         prev_frame.Depth_Pyramid[0]->save_off_format("outputs\\point_clouds\\pc_previous" + std::to_string(file_idx) + ".obj");

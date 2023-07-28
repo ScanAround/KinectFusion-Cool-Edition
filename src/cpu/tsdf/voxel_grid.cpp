@@ -4,14 +4,16 @@
 
 namespace kinect_fusion {
 
+/*
 VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_, Eigen::Vector3d center): 
                     dimX(dimX), dimY(dimY), dimZ(dimZ), dimYZ(dimY*dimZ), gridSize(gridSize_), 
                     center(center) {
   // initially the grid is centered at gridSize * 0.5
   voxelSize = gridSize.cwiseQuotient(Eigen::Vector3d(dimX, dimY, dimZ));
   initializeGrid();
-}
+}*/
 
+/*
 void VoxelGrid::initializeGrid() {
 
   // The following is a way to initialize a 3D array/vector without for loops.
@@ -49,8 +51,8 @@ void VoxelGrid::initializeGrid() {
   max = grid[(dimX-1)*dimYZ + (dimY-1)*dimZ + (dimZ-1)].position;
   min = grid[0].position;
   
-}
-  
+}*/
+ /*
 void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
   // Calculate the translation vector
   Eigen::Vector3d translation = newCenter - center;
@@ -65,7 +67,7 @@ void VoxelGrid::repositionGrid(Eigen::Vector3d newCenter) {
   }
 
   center = newCenter; // Update the current center
-}
+}*/
 
 Voxel& VoxelGrid::getVoxel(size_t x, size_t y, size_t z) {
   return grid[x*dimYZ + y*dimZ + z];
@@ -107,6 +109,7 @@ std::vector<Voxel> VoxelGrid::getGrid() const {
   return grid;
 }
 
+/*
 void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps, 
                                  const std::vector<Eigen::Matrix4d>& poses,
                                  const std::vector<Eigen::Tensor<double, 3>>& W_R_k,
@@ -229,6 +232,6 @@ Eigen::Vector2d VoxelGrid::projectiveTSDF(const Eigen::Vector3d& p,
 
   // Here, we return the TSDF value and the corresponding image coordinate.
   return Eigen::Vector2d(F_R_k_p, x.norm());
-}
+}*/
 
 }

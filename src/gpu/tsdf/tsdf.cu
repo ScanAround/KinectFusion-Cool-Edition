@@ -99,8 +99,16 @@ void VoxelGrid::initializeGrid() {
 
   initialize <<<block_nums,thread_nums>>> (cu_grid, dimX, dimY, dimZ, dimYZ, voxelSize, thread_nums, center);
   cudaDeviceSynchronize();
+
+  ddx = 1.0f / (dimX - 1);
+  ddy = 1.0f / (dimY - 1);
+  ddz = 1.0f / (dimZ - 1);
+
+  max = grid[(dimX-1)*dimYZ + (dimY-1)*dimZ + (dimZ-1)].position;
+  min = grid[0].position;
 }
 
+/*
 Voxel& VoxelGrid::getVoxel(size_t x, size_t y, size_t z) {
   return grid[x*dimYZ + y*dimZ + z];
 }
@@ -115,7 +123,7 @@ size_t VoxelGrid::getDimY() const {
 
 size_t VoxelGrid::getDimZ() const {
   return dimZ;
-}
+}*/
 
 void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
                                  double mu) {
