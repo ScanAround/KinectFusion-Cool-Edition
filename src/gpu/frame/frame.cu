@@ -1,17 +1,27 @@
-#include "../../cpu/frame/Frame.h"
+#include "GPU_icp.h"
+#include "Frame_Pyramid.h"
 #include <iostream>
-#include <eigen3/Eigen/Dense>
-#include <FreeImage.h>
 #include <fstream>
-#include <math.h>
-#include <array>
+#include <FreeImage.h>
 #include <vector>
-
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#ifndef CUDACC
+#define CUDACC
+#endif
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+#include <cusolverDn.h>
+#include <iostream>
+#include <Eigen/Dense>
+#include <FreeImage.h>
+#include <fstream>
+#include <math.h>
+#include <array>
+#include <vector>
 #define MINF -std::numeric_limits<float>::infinity()
 
 #define MAXTHRESHOLD 10
@@ -38,9 +48,9 @@ void apply_bilateral_cuda(float* depthMap, float* filteredImage, int diameter, d
 				else
 				{
 					double N_r = exp(-(pow(sqrt(pow(depthMap[neighbor_x * width + neighbor_y] - depthMap[id_x * width + id_y], 2)), 2)) / pow(sigmaR, 2));
-					
+
 					double N_s = exp(-(pow(sqrt(pow(id_x - neighbor_x, 2) + pow(id_y - neighbor_y, 2)), 2)) / pow(sigmaS, 2));
-					
+
 					double w = N_s * N_r;
 					filtered += depthMap[neighbor_x * width + neighbor_y] * w;
 					wP = wP + w;
@@ -64,33 +74,33 @@ void apply_bilateral_cuda(float* depthMap, float* filteredImage, int diameter, d
 
 __global__
 void calculate_Vks_cuda(Eigen::Matrix3f K_i,
-    Eigen::Vector3f* dV_k,
-    float* Depth_k, int* dMk_0, int* dMk_1,
-    int width, int height) {
+	Eigen::Vector3f* dV_k,
+	float* Depth_k, int* dMk_0, int* dMk_1,
+	int width, int height) {
 
 	int id_x = blockIdx.x * blockDim.x + threadIdx.x;
 	int id_y = blockIdx.y * blockDim.y + threadIdx.y;
-    Eigen::Vector3f u_dot;
+	Eigen::Vector3f u_dot;
 
-    if (id_y < width && id_x < height) {
-        u_dot << id_y, id_x, 1;
-        if (Depth_k[id_x * width + id_y] == -INFINITY || Depth_k[id_x * width + id_y] <= 0.0f) {
-            dV_k[id_x * width + id_y] = Eigen::Vector3f(-INFINITY, -INFINITY, -INFINITY);
-            dMk_0[id_x * width + id_y] = id_x * width + id_y;
-        }
-        else {
-            dV_k[id_x * width + id_y] = Depth_k[id_x * width + id_y] / 5000.0f * K_i * u_dot;
-            dMk_1[id_x * width + id_y] = id_x * width + id_y;
-        }
-    }
+	if (id_y < width && id_x < height) {
+		u_dot << id_y, id_x, 1;
+		if (Depth_k[id_x * width + id_y] == -INFINITY || Depth_k[id_x * width + id_y] <= 0.0f) {
+			dV_k[id_x * width + id_y] = Eigen::Vector3f(-INFINITY, -INFINITY, -INFINITY);
+			dMk_0[id_x * width + id_y] = id_x * width + id_y;
+		}
+		else {
+			dV_k[id_x * width + id_y] = Depth_k[id_x * width + id_y] / 5000.0f * K_i * u_dot;
+			dMk_1[id_x * width + id_y] = id_x * width + id_y;
+		}
+	}
 }
 
 __global__
 void calculate_Nks_cuda(Eigen::Vector3f* dV_k,
-    Eigen::Vector3f* dN_k,
-    int width, int height) 
+	Eigen::Vector3f* dN_k,
+	int width, int height)
 {
-	
+
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int j = blockIdx.y * blockDim.y + threadIdx.y;
 	if (i < height - 1 && j < width - 1) {
@@ -98,29 +108,31 @@ void calculate_Nks_cuda(Eigen::Vector3f* dV_k,
 		ans.normalize();
 		dN_k[i * width + j] = ans;
 	}
-	else{
+	else {
 		Eigen::Vector3f ans = (dV_k[i * width + (width - 1) - 1] - dV_k[(i)*width + (width - 1)]).cross((dV_k[(i + 1) * width + (width - 1)] - dV_k[(i)*width + (width - 1)]));
 		ans.normalize();
 		dN_k[i * width + j] = ans;
 	}
-	
+
 
 }
 
 
-Eigen::Vector3f* Frame::calculate_Vks_new(float *filtered_img, int* M_k1_new)
+std::vector<Eigen::Vector3f> Frame::calculate_Vks()
 {
-	Eigen::Matrix3f K_i = K_calibration.inverse(); 
+	V_k.resize(width * height);
+
+	Eigen::Matrix3f K_i = K_calibration.inverse();
 
 	Eigen::Vector3f* dV_k;
-	Eigen::Vector3f* V_k_new = new Eigen::Vector3f[height * width];
 
 	int* dMk_1;
 	int* dMk_0;
 
 	//int* M_k1_new = new int[height * width];
-	int* M_k0_new = new int[height * width];
-	float* filtered_img_gpu=new float[height * width];
+	M_k0.resize(width * height);
+	M_k1.resize(width * height);
+	float* filtered_img_gpu;
 
 	cudaError_t cudaStatus1 = cudaMalloc(&dV_k, height * width * sizeof(Eigen::Vector3f));
 	if (cudaStatus1 != cudaSuccess) {
@@ -139,9 +151,9 @@ Eigen::Vector3f* Frame::calculate_Vks_new(float *filtered_img, int* M_k1_new)
 	if (cudaStatus10 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus10) << std::endl;
 	};
-	cudaError_t cudaStatus0 = cudaMemcpy(filtered_img_gpu, filtered_img, width * height * sizeof(float), cudaMemcpyHostToDevice);
+	cudaError_t cudaStatus0 = cudaMemcpy(filtered_img_gpu, Depth_k, width * height * sizeof(float), cudaMemcpyHostToDevice);
 	if (cudaStatus3 != cudaSuccess) {
-		std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus3) << std::endl;
+		std::cout << "Problem in Copying1212: " << cudaGetErrorString(cudaStatus3) << std::endl;
 	};
 
 	dim3 threadsPerBlock(16, 16);
@@ -150,31 +162,30 @@ Eigen::Vector3f* Frame::calculate_Vks_new(float *filtered_img, int* M_k1_new)
 	cudaDeviceSynchronize();
 
 
-	cudaError_t cudaStatus2 = cudaMemcpy(V_k_new, dV_k, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
+	cudaError_t cudaStatus2 = cudaMemcpy(V_k.data(), dV_k, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
 	if (cudaStatus2 != cudaSuccess) {
-		std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus2) << std::endl;
+		std::cout << "Problem in Copying1313: " << cudaGetErrorString(cudaStatus2) << std::endl;
 	};
-	cudaError_t cudaStatus5 = cudaMemcpy(M_k1_new, dMk_1, width * height * sizeof(int), cudaMemcpyDeviceToHost);
+	cudaError_t cudaStatus5 = cudaMemcpy(M_k1.data(), dMk_1, width * height * sizeof(int), cudaMemcpyDeviceToHost);
 	if (cudaStatus5 != cudaSuccess) {
-		std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus5) << std::endl;
+		std::cout << "Problem in Copying1414: " << cudaGetErrorString(cudaStatus5) << std::endl;
 	};
-	cudaError_t cudaStatus6 = cudaMemcpy(M_k0_new, dMk_0, width * height * sizeof(int), cudaMemcpyDeviceToHost);
+	cudaError_t cudaStatus6 = cudaMemcpy(M_k0.data(), dMk_0, width * height * sizeof(int), cudaMemcpyDeviceToHost);
 	if (cudaStatus6 != cudaSuccess) {
-		std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus6) << std::endl;
+		std::cout << "Problem in Copying1415: " << cudaGetErrorString(cudaStatus6) << std::endl;
 	};
 	cudaFree(dV_k);
 	cudaFree(dMk_1);
 	cudaFree(dMk_0);
 	cudaFree(filtered_img_gpu);
 
-	return V_k_new;
+	return V_k;
 }
-Eigen::Vector3f* Frame::calculate_Nks_new(Eigen::Vector3f* V_k_new,int* M_k_1_new)
+std::vector<Eigen::Vector3f>  Frame::calculate_Nks()
 {
-
-	Eigen::Vector3f* N_k_new = new Eigen::Vector3f[height * width];
-	Eigen::Vector3f* dN_k = new Eigen::Vector3f[height * width];
-	Eigen::Vector3f* V_k_array = new Eigen::Vector3f[height * width];
+	N_k.resize(width * height);
+	Eigen::Vector3f* dN_k;
+	Eigen::Vector3f* V_k_array;
 
 	cudaError_t cudaStatus1 = cudaMalloc(&dN_k, height * width * sizeof(Eigen::Vector3f));
 	if (cudaStatus1 != cudaSuccess) {
@@ -184,7 +195,7 @@ Eigen::Vector3f* Frame::calculate_Nks_new(Eigen::Vector3f* V_k_new,int* M_k_1_ne
 	if (cudaStatus2 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus2) << std::endl;
 	};
-	cudaError_t cudaStatus3 = cudaMemcpy(V_k_array, V_k_new, width * height * sizeof(Eigen::Vector3f), cudaMemcpyHostToDevice);
+	cudaError_t cudaStatus3 = cudaMemcpy(V_k_array, V_k.data(), width * height * sizeof(Eigen::Vector3f), cudaMemcpyHostToDevice);
 	if (cudaStatus3 != cudaSuccess) {
 		std::cout << "Problem in Copying3: " << cudaGetErrorString(cudaStatus3) << std::endl;
 	};
@@ -195,34 +206,15 @@ Eigen::Vector3f* Frame::calculate_Nks_new(Eigen::Vector3f* V_k_new,int* M_k_1_ne
 	cudaDeviceSynchronize();
 
 
-	cudaError_t cudaStatus4 = cudaMemcpy(N_k_new, dN_k, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
+	cudaError_t cudaStatus4 = cudaMemcpy(N_k.data(), dN_k, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
 	if (cudaStatus4 != cudaSuccess) {
 		std::cout << "Problem in Copying4: " << cudaGetErrorString(cudaStatus4) << std::endl;
 	};
 
 	cudaFree(dN_k);
 	cudaFree(V_k_array);
-	std::ofstream OffFile("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/scene2_cuda.obj");
-	for (int j = 0; j < width * height; j++) {
-		int i = M_k_1_new[j];
-		if (i == 0) {
-			continue;
-		}
-		if (abs(V_k_new[i][0]) < MAXTHRESHOLD) {
-			OffFile << "v " << V_k_new[i][0] << " " << V_k_new[i][1] << " " << V_k_new[i][2] << std::endl;
-			if (!std::isnan(N_k_new[i][0]) && !std::isnan(N_k_new[i][1]) && !std::isnan(N_k_new[i][2])) {
-				OffFile << "vn " << N_k_new[i][0] << " " << N_k_new[i][1] << " " << N_k_new[i][2] << std::endl;
-			}
-			else {
-				OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
-			}
-		}
-	}
-	OffFile.close();
-	
 
-
-	return N_k_new;
+	return N_k;
 }
 
 
@@ -234,7 +226,7 @@ void swapRows(float* image, int width, int row1, int row2) {
 }
 
 // Function to create the symmetric image along the X-axis (horizontal flip)
-float * symmetricImageX(float* image, int width, int height) {
+float* symmetricImageX(float* image, int width, int height) {
 	int topRow = 0;
 	int bottomRow = height - 1;
 
@@ -264,22 +256,116 @@ float* Frame::bilateralFilter(int diameter, double sigmaS, double sigmaR) {
 	if (cudaStatus4 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus4) << std::endl;
 	};
-	cudaError_t cudaStatus3 = cudaMemcpy(depthMap, Depth_k, width * height * sizeof(float), cudaMemcpyHostToDevice);
+	cudaError_t cudaStatus3 = cudaMemcpy(depthMap, Raw_k, width * height * sizeof(float), cudaMemcpyHostToDevice);
 	if (cudaStatus3 != cudaSuccess) {
 		std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus3) << std::endl;
 	};
 
 
-	apply_bilateral_cuda <<<numBlocks, threadsPerBlock >>> (depthMap, filteredImage, diameter, sigmaS, sigmaR, width, height);
+	apply_bilateral_cuda << <numBlocks, threadsPerBlock >> > (depthMap, filteredImage, diameter, sigmaS, sigmaR, width, height);
 	cudaDeviceSynchronize();
 
-	cudaError_t cudaStatus2 = cudaMemcpy(filteredImage_final, filteredImage, width*height * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaError_t cudaStatus2 = cudaMemcpy(filteredImage_final, filteredImage, width * height * sizeof(float), cudaMemcpyDeviceToHost);
 	if (cudaStatus2 != cudaSuccess) {
 		std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus2) << std::endl;
 	};
 	cudaFree(filteredImage);
 	cudaFree(depthMap);
-	filteredImage_final = symmetricImageX(filteredImage_final, width, height);
+	//filteredImage_final = symmetricImageX(filteredImage_final, width, height);
 
 	return filteredImage_final;
 }
+
+void Frame::save_off_format(const std::string& where_to_save) {
+
+	std::ofstream OffFile(where_to_save);
+	for (int j = 0; j < width * height; j++) {
+		int i = M_k1[j];
+		if (i == 0) {
+			continue;
+		}
+		if (abs(V_k[i][0]) < MAXTHRESHOLD) {
+			OffFile << "v " << V_k[i][0] << " " << V_k[i][1] << " " << V_k[i][2] << std::endl;
+			if (!std::isnan(N_k[i][0]) && !std::isnan(N_k[i][1]) && !std::isnan(N_k[i][2])) {
+				OffFile << "vn " << N_k[i][0] << " " << N_k[i][1] << " " << N_k[i][2] << std::endl;
+			}
+			else {
+				OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
+			}
+		}
+	}
+	OffFile.close();
+}
+
+
+Frame::Frame(FIBITMAP& dib, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
+	dib(FreeImage_ConvertToFloat(&dib)), T_gk(T_gk) {
+
+	width = FreeImage_GetWidth(this->dib);
+	height = FreeImage_GetHeight(this->dib);
+
+	Depth_k = new float[width * height]; // have to rescale according to the data 
+
+	Raw_k = (float*)FreeImage_GetBits(this->dib); // have to rescale according to the data 
+
+	K_calibration << 525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
+		0.0f, 525.0f / sub_sampling_rate, 239.5f / sub_sampling_rate,
+		0.0f, 0.0f, 1.0f;
+}
+
+Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
+	dib(FreeImage_ConvertToFloat(FreeImage_Load(FreeImage_GetFileType(image_dir), image_dir))) {
+
+	FreeImage_Initialise();
+
+	width = FreeImage_GetWidth(this->dib);
+	height = FreeImage_GetHeight(this->dib);
+
+	Depth_k = new float[width * height]; // have to rescale according to the data 
+
+	Raw_k = (float*)FreeImage_GetBits(this->dib); // have to rescale according to the data 
+
+	K_calibration << 525.0f / sub_sampling_rate, 0.0f, 319.5f / sub_sampling_rate,
+		0.0f, 525.0f / sub_sampling_rate, 239.5f / sub_sampling_rate,
+		0.0f, 0.0f, 1.0f;
+
+	this->T_gk = T_gk;
+
+	FreeImage_DeInitialise();
+}
+/*
+Frame::Frame(Eigen::Vector3f* V_gks, Eigen::Vector3f* N_gks, Eigen::Matrix4f T_gk, int width, int height) :
+	width(width), height(height), T_gk(T_gk), V_gk(V_gks), N_gk(N_gks) {
+
+	K_calibration << 525.0f, 0.0f, 319.5f,
+		0.0f, 525.0f, 239.5f,
+		0.0f, 0.0f, 1.0f;
+
+}
+*/
+Frame::~Frame() {
+	if (dib != nullptr) { delete dib; }
+	if (Depth_k != nullptr) { delete[] Depth_k; }
+	// if(Raw_k != nullptr){delete Raw_k;}
+}
+
+
+
+
+
+void Frame::process_image(float sigma_r, float sigma_s, int filter_size, bool apply_bilateral) {
+	
+	if (apply_bilateral) {
+		Depth_k = bilateralFilter(15, 3.0, 0.01);
+	}
+	else
+	{
+		Depth_k = Raw_k;
+	}
+	// cuda
+	calculate_Vks();
+	calculate_Nks();
+	//save_off_format("C:/Users/yigitavci/Desktop/TUM_DERS/Semester_2/3D_Scanning/KinectFusion-Cool-Edition/scene2_cudaa_nofilter.obj");
+
+}
+
