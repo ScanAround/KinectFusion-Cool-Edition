@@ -1,6 +1,6 @@
 #include "voxel_grid.h"
-#include "../frame/Frame.h"
-#include <eigen3/Eigen/Dense>
+// #include "../frame/Frame.h"
+// #include <eigen3/Eigen/Dense>
 
 namespace kinect_fusion {
 
@@ -16,7 +16,7 @@ void VoxelGrid::initializeGrid() {
 
   // The following is a way to initialize a 3D array/vector without for loops.
   grid = std::vector<Voxel>(dimX * dimY * dimZ);
-  grid = std::vector<Voxel>(dimX * dimY * dimZ);
+  // grid = std::vector<Voxel>(dimX * dimY * dimZ);
   
   // In essence, we're scaling the voxel indices by the size of each voxel to get the position in 
   // the global frame. This is done because the voxel indices are in grid coordinates (which range 
@@ -36,7 +36,7 @@ void VoxelGrid::initializeGrid() {
         // grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
         grid[x*dimYZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
         // grid[i][j][k].position = voxelSize.cwiseProduct(Eigen::Vector3d(i, j, k)) + voxelSize * 0.5;
-        grid[x*dimYZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
+        // grid[x*dimYZ + y*dimZ + z].position = voxelSize.cwiseProduct(Eigen::Vector3d(x, y, z)) + voxelSize * 0.5;
       }
     }
   }
@@ -81,6 +81,30 @@ size_t VoxelGrid::getDimY() const {
 
 size_t VoxelGrid::getDimZ() const {
   return dimZ;
+}
+
+double VoxelGrid::getSizeX() const { 
+  return ddx; 
+}
+
+double VoxelGrid::getSizeY() const { 
+  return ddy;
+}
+
+double VoxelGrid::getSizeZ() const { 
+  return ddz; 
+}
+
+Eigen::Vector3d VoxelGrid::getMin() const {
+  return min; 
+}
+
+Eigen::Vector3d VoxelGrid::getMax() const { 
+  return max; 
+}
+
+std::vector<Voxel> VoxelGrid::getGrid() const {
+  return grid;
 }
 
 void VoxelGrid::updateGlobalTSDF(const std::vector<Eigen::MatrixXd>& depthMaps, 

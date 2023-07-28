@@ -11,7 +11,7 @@ tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
                     0.0f, 0.0f, 1.0f;
 }*/
 
-Raycasting::Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter):
+/*Raycasting::Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter):
 tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
 {
     width = 640;
@@ -19,7 +19,7 @@ tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
     intrinsics <<   525.0f, 0.0f, 319.5f,
                     0.0f, 525.0f, 239.5f,
                     0.0f, 0.0f, 1.0f;
-}
+}*/
 
 Vertex Raycasting::castOne(const unsigned int i, const unsigned int j)
 {

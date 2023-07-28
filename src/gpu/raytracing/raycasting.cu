@@ -151,9 +151,16 @@ tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
 void Raycasting::writePointCloud(const std::string& filename)
 {
     std::ofstream file(filename);
+    std::ofstream file(filename);
 
 	for (unsigned int i = 0; i < width * height; ++i)
+	for (unsigned int i = 0; i < width * height; ++i)
 	{
+		if (vertices[i].position[0] != MINF && vertices[i].position[1] != MINF && vertices[i].position[2] != MINF)
+		{
+			file << "v " << vertices[i].position[0] << " " << vertices[i].position[1] << " " << vertices[i].position[2] << std::endl;
+			file << "vn " << vertices[i].normal[0] << " " << vertices[i].normal[1] << " " << vertices[i].normal[2] << std::endl;
+		}
 		if (vertices[i].position[0] != MINF && vertices[i].position[1] != MINF && vertices[i].position[2] != MINF)
 		{
 			file << "v " << vertices[i].position[0] << " " << vertices[i].position[1] << " " << vertices[i].position[2] << std::endl;
@@ -168,6 +175,7 @@ void Raycasting::castAllCuda()
 	Vertex *verticesCuda;
 	double *volume;
 
+	// vertices = (Vertex*)malloc(width * height * sizeof(Vertex));
 	// vertices = (Vertex*)malloc(width * height * sizeof(Vertex));
 
 	cudaError_t cudaStatusVol = cudaMallocManaged(&volume, tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(double));

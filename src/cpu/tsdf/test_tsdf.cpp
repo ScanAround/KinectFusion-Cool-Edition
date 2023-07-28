@@ -18,7 +18,7 @@ void writePointCloud(const std::string& filename, const std::vector<Eigen::Vecto
 
 int main() {
 
-auto start = std::chrono::high_resolution_clock::now();
+// auto start = std::chrono::high_resolution_clock::now();
 
 double tx = 1.3434, ty = 0.6271, tz = 1.6606;
 double qx = 0.6583, qy = 0.6112, qz = -0.2938, qw = -0.3266;
@@ -35,7 +35,7 @@ pose(3,3) = 1.0;
 
 auto pose_f = pose.cast<float>();
 
-const char* img_loc = "/home/amroabuzer/Desktop/KinectFusion/KinectFusion-Cool-Edition/data/rgbd_dataset_freiburg1_xyz/depth/1305031102.160407.png"; 
+const char* img_loc = "C:\\Users\\marcw\\Desktop\\BMC_TUM\\sose23\\3dsmc\\Exercises\\Data\\rgbd_dataset_freiburg1_xyz\\depth\\1305031102.160407.png"; 
 
 Frame* frame1 = new Frame(img_loc, pose_f, 1.0);
 
@@ -62,8 +62,8 @@ double mu = 0.02;
 
 grid.updateGlobalTSDF(*frame1, mu);
 
-std::vector<Eigen::Vector3f> vertices;
-std::vector<Eigen::Vector3f> normals;
+// std::vector<Eigen::Vector3f> vertices;
+// std::vector<Eigen::Vector3f> normals;
 
 Eigen::Matrix3f rotation; 
 rotation << float(pose(0, 0)), float(pose(0, 1)), float(pose(0, 2)),
@@ -72,19 +72,22 @@ rotation << float(pose(0, 0)), float(pose(0, 1)), float(pose(0, 2)),
 
 Eigen::Vector3f translation(1.3434f, 0.6271f, 1.6606f);
 
+auto start = std::chrono::high_resolution_clock::now();
 Raycasting r(grid, rotation, translation);
+	
+r.castAllCuda();
 
-r.castAll();
+r.writePointCloud("pointcloud.obj");
 
-vertices = r.getVertices();
-normals = r.getNormals();
-
-writePointCloud("pointcloud.obj", vertices, normals);
-
-mesher -> Mesher(grid, 0, "mesh2.off");
+r.freeCuda();
 
 auto end = std::chrono::high_resolution_clock::now();
 auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+
+mesher -> Mesher(grid, 0, "mesh2.off");
+
+// auto end = std::chrono::high_resolution_clock::now();
+// auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
 std::cout << "time for execution: " << duration << std::endl; 
 }

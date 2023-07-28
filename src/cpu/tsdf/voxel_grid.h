@@ -2,8 +2,8 @@
 
 #include "voxel.h"
 #include <vector>      // for std::vector
-#include <eigen3/Eigen/Dense> // for Eigen::Vector3d
-#include <eigen3/unsupported/Eigen/CXX11/Tensor> // for Eigen::Tensor<double, 3>
+#include <Eigen/Dense> // for Eigen::Vector3d
+#include <unsupported/Eigen/CXX11/Tensor> // for Eigen::Tensor<double, 3>
 #include "../frame/Frame.h"
 // TO DO: Implement the real-time version of the function above in which we process each incoming 
 // depth map as it arrives, updating the global TSDF and weights incrementally instead of 
@@ -65,6 +65,18 @@ public:
   size_t getDimY() const;
 
   size_t getDimZ() const;
+  
+  double getSizeX() const;
+
+	double getSizeY() const;
+
+	double getSizeZ() const;
+
+	Eigen::Vector3d getMin() const;
+  
+	Eigen::Vector3d getMax() const;
+
+  std::vector<Voxel> getGrid() const;
 
   // Global fusion of all depth maps in the volume to a single TSDF as described in the research
   // paper "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/ismar_2011.pdf".

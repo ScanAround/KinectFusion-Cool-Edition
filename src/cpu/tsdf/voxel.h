@@ -1,6 +1,6 @@
 #pragma once
 
-#include <eigen3/Eigen/Dense> // for Eigen::Vector3d
+#include <Eigen/Dense> // for Eigen::Vector3d
 #include <limits>      // for std::numeric_limits
 
 namespace kinect_fusion {

@@ -3430,3 +3430,4 @@ build/CMakeFiles/KinectFusionLib.dir/src/cpu/frame/Frame_Pyramid.cpp.o.d
 build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Ray.cpp.o
 build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Ray.cpp.o.d
 build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Raycasting.cpp.o
+src/cuda_out

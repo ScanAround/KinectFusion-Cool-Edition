@@ -1,11 +1,11 @@
 #ifndef RAYCASTING_H
 #define RAYCASTING_H
 
-#include <vector>
 #include <Eigen/Dense>
-#include "Volume.h"
-#include "Ray.h"
-#include "../tsdf/voxel_grid.h"
+#include <vector>
+// #include "Volume.h"
+// #include "Ray.h"
+#include "../../cpu/tsdf/voxel_grid.h"
 
 #define MAX_MARCHING_STEPS 20000
 #define MINF -std::numeric_limits<float>::infinity()
@@ -26,9 +26,13 @@ public:
 
 	Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter);
 
+	~Raycasting();
+
 	Vertex castOne(const unsigned int i, const unsigned int j);
 
 	void castAll();
+
+	void castAllCuda();
 
 	Eigen::Vector3f computeNormal(const Eigen::Vector3f& p);
 
@@ -36,6 +40,10 @@ public:
 
 	std::vector<Eigen::Vector3f> getVertices();
 	std::vector<Eigen::Vector3f> getNormals();
+
+	void writePointCloud(const std::string& filename);
+
+	void freeCuda();
 
 private:
 	const Eigen::Matrix3f extrinsincs;
@@ -47,8 +55,6 @@ private:
 
 	// Volume tsdf;
 	kinect_fusion::VoxelGrid tsdf;
-
-	std::vector<Vertex> vertices;
 
 	unsigned int width;
 	unsigned int height;
