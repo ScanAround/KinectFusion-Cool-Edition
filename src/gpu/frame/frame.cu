@@ -245,10 +245,10 @@ void Frame::save_off_format(const std::string& where_to_save) {
 
 	std::ofstream OffFile(where_to_save);
 	for (int j = 0; j < width * height; j++) {
-		// int i = M_k1[j];
-		// if (i == 0) {
-		//	continue;
-		// }
+		int i = M_k1[j];
+		if (i == 0) {
+			continue;
+		}
 		if (abs(V_k[i][0]) < MAXTHRESHOLD) {
 			OffFile << "v " << V_k[i][0] << " " << V_k[i][1] << " " << V_k[i][2] << std::endl;
 			if (!std::isnan(N_k[i][0]) && !std::isnan(N_k[i][1]) && !std::isnan(N_k[i][2])) {
