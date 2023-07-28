@@ -120,8 +120,10 @@ public:
     }
     float * Raw_k;
     Eigen::Vector3f center_of_mass = Eigen::Vector3f::Zero();
-private:
+
     FIBITMAP * dib;
+private:
+    // FIBITMAP * dib;
     //Initial Raw Depth Map
     //Depth Map
     float * Depth_k; 

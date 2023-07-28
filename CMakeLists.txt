@@ -31,8 +31,6 @@ src/cpu/frame/Frame_Pyramid.h
 src/cpu/mesher/Marching_Cubes.h
 src/cpu/mesher/Lookup_Tables.h
 src/cpu/raytracing/Raycasting.h
-src/cpu/raytracing/Volume.h
-src/cpu/raytracing/Ray.h
 )
 
 set(SOURCES
@@ -40,12 +38,10 @@ src/gpu/frame/frame.cu
 src/gpu/raytracing/raycasting.cu
 src/gpu/icp/icp.cu
 src/gpu/tsdf/tsdf.cu
-
-src/cpu/raytracing/Raycasting.cpp
+src/cpu/tsdf/voxel_grid.cpp
 # src/cpu/tsdf/voxel_grid.cpp
 # src/cpu/frame/Frame.cpp
 src/cpu/tsdf/voxel.cpp
-src/cpu/raytracing/Ray.cpp
 src/cpu/frame/Frame_Pyramid.cpp
 src/cpu/tsdf/kinect_fusion_utility.cpp
 src/Kinect_Fusion.cpp

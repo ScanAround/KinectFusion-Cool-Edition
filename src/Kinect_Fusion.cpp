@@ -9,7 +9,7 @@ int main(){
     //initiating mesher
     std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
     
-    std::string s_dir = "..\\..\\Exercises\\Data\\rgbd_dataset_freiburg1_xyzrgbd_dataset_freiburg1_xyz\\depth"; 
+    std::string s_dir = "C:\\Users\\marcw\\Desktop\\BMC_TUM\\sose23\\3dsmc\\Exercises\\Data\\rgbd_dataset_freiburg1_xyz\\depth"; 
     auto filenames = kinect_fusion::utility::getPngFilesInDirectory(s_dir);
     
     Frame_Pyramid curr_frame(s_dir + "\\" + filenames[0]);

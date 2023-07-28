@@ -12,7 +12,7 @@
 // #include <opencv4/opencv2/opencv.hpp>
 // #include <opencv4/opencv2/opencv.hpp>
 #include <FreeImage.h>
-#include <dirent.h>
+#include "C:\\Users\\marcw\\Desktop\\BMC_TUM\\sose23\\3dsmc\\Exercises\\Libs\\dirent-1.21\\include\\dirent.h"
 #include <algorithm>
 #include "voxel_grid.h"
 
