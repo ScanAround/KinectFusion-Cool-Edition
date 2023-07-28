@@ -140,7 +140,7 @@ Eigen::Vector3f Raycasting::computeNormal(const Eigen::Vector3f& p)
     }
 }
 
-
+/*
 std::vector<Eigen::Vector3f> Raycasting::getVertices()
 {
     std::vector<Eigen::Vector3f> vrtxs;
@@ -160,4 +160,4 @@ std::vector<Eigen::Vector3f> Raycasting::getNormals()
         nrmls.push_back(v.normal);
 
     return nrmls;
-}
+}*/
