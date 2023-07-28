@@ -3425,3 +3425,8 @@ build/CMakeFiles/KinectFusionLib.dir/src/cpu/tsdf/voxel.cpp.o.d
 build/CMakeFiles/Progress/2
 build/CMakeFiles/Progress/3
 build/CMakeFiles/Progress/count.txt
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/frame/Frame_Pyramid.cpp.o
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/frame/Frame_Pyramid.cpp.o.d
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Ray.cpp.o
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Ray.cpp.o.d
+build/CMakeFiles/KinectFusionLib.dir/src/cpu/raytracing/Raycasting.cpp.o
