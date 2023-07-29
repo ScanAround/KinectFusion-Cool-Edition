@@ -98,7 +98,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 			{
 				intersected = true;
 				double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue;
-				printf("x = %f, y = %f, z = %f", tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[0], tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[1], tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[2]);
+				// printf("(%f, %f, %f, %f) \n", tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[0], tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[1], tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[2], dist);
 				// printf("%d \n", dist);
 				if (!isnan(dist))
 				{
@@ -195,7 +195,16 @@ void Raycasting::castAllCuda()
 	// std::cout << tsdf.getGrid().data()[2].position << std::endl;
 	// std::cout << tsdf.getGrid()[2].position << std::endl;
 
-	auto cudaCpyVol = cudaMemcpy(volume, tsdf.getGrid(), tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel), cudaMemcpyHostToDevice);
+	// for (kinect_fusion::Voxel& v : tsdf.getGrid())
+	// {
+	// 	std::cout << "(" << v.position[0] << ", " << v.position[1] << ", " << v.position[2] << ", " << v.tsdfValue <<") \n" << std::endl;
+	// }
+
+	// tsdf.grid[0].position[0] = 1.0f;
+
+	// std::cout << tsdf.grid[0].position << std::endl;
+
+	auto cudaCpyVol = cudaMemcpy(volume, tsdf.getGrid().data(), tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel), cudaMemcpyHostToDevice);
 	auto cudaCpyVertices = cudaMemcpy(verticesCuda, vertices, width * height * sizeof(Vertex), cudaMemcpyHostToDevice);
 	if(cudaCpyVol != cudaSuccess)
 	{

@@ -104,7 +104,7 @@ Eigen::Vector3d VoxelGrid::getMax() const {
   return max; 
 }
 
-Voxel* VoxelGrid::getGrid() const {
+ std::vector<Voxel> VoxelGrid::getGrid() const {
   return grid;
 }
 

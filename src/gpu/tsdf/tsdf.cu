@@ -84,8 +84,7 @@ VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d grid
                     dimX(dimX), dimY(dimY), dimZ(dimZ), dimYZ(dimY*dimZ), gridSize(gridSize_), 
                     center(ctr_of_mass) {
                     // center(-0.5*gridSize_){
-  std::cout<< center << std::endl;
-  grid = new Voxel[dimX * dimYZ];
+  grid.resize(dimX * dimYZ);
   voxelSize = gridSize.cwiseQuotient(Eigen::Vector3d(dimX, dimY, dimZ));
   initializeGrid();
 }
@@ -101,6 +100,11 @@ void VoxelGrid::initializeGrid() {
 
   initialize <<<block_nums,thread_nums>>> (cu_grid, dimX, dimY, dimZ, dimYZ, voxelSize, thread_nums, center);
   cudaDeviceSynchronize();
+
+  cudaError_t cudaStatus2 = cudaMemcpy(grid.data(), cu_grid, dimX * dimYZ * sizeof(Voxel), cudaMemcpyDeviceToHost);
+  if(cudaStatus2 != cudaSuccess){
+    std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus2) << std::endl;
+  };
 
   ddx = 1.0f / (dimX - 1);
   ddy = 1.0f / (dimY - 1);
@@ -155,7 +159,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
                                        R, curr_frame.width, curr_frame.height, mu, thread_nums);
   cudaDeviceSynchronize();
   
-  cudaError_t cudaStatus2 = cudaMemcpy(grid, cu_grid, dimX * dimYZ * sizeof(Voxel), cudaMemcpyDeviceToHost);
+  cudaError_t cudaStatus2 = cudaMemcpy(grid.data(), cu_grid, dimX * dimYZ * sizeof(Voxel), cudaMemcpyDeviceToHost);
   if(cudaStatus2 != cudaSuccess){
     std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus2) << std::endl;
   };
