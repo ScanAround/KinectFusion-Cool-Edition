@@ -1,5 +1,6 @@
 #include "voxel_grid.h"
 #include "../raytracing/Raycasting.h"
+#include "../tsdf/kinect_fusion_utility.h"
 #include "../mesher/Marching_Cubes.h"
 #include <algorithm>
 #include <chrono>
@@ -85,6 +86,8 @@ auto end = std::chrono::high_resolution_clock::now();
 auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
 mesher -> Mesher(grid, 0, "mesh2.off");
+
+kinect_fusion::utility::writeTSDFToFile("tsdf_cuda.txt", grid);
 
 // auto end = std::chrono::high_resolution_clock::now();
 // auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();

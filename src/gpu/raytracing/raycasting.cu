@@ -96,29 +96,29 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 			
 			if (!outOfVolume(pGrid[0], pGrid[1], pGrid[2], dx, dy, dz))
 			{
-				intersected = true;
-				double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue;
-				if (!isnan(dist))
-				{
-					if (prevDist > 0 && dist <= 0 && s > 0)
-					{	
-						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
-						Eigen::Vector3f n;
-						if(computeNormal(n, tsdf, pGrid, dx, dy, dz))
-						{
-							Eigen::Vector3f pWorld = gridToWorld(pGrid, min, max, ddx, ddy, ddz);
-							Vertex v = {pWorld, n};
-							vertices[j * width + i] = v;
-						}
-						
-						break;
+			intersected = true;
+			double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue;
+			if (!isnan(dist))
+			{
+				if (prevDist > 0 && dist <= 0 && s > 0)
+				{	
+					// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
+					Eigen::Vector3f n;
+					if(computeNormal(n, tsdf, pGrid, dx, dy, dz))
+					{
+						Eigen::Vector3f pWorld = gridToWorld(pGrid, min, max, ddx, ddy, ddz);
+						Vertex v = {pWorld, n};
+						vertices[j * width + i] = v;
 					}
-					prevDist = dist;
-					// step += dist * 0.25f; 
-					step += 1.0f;
+					
+					break;
 				}
-				else
-					step += 1.0f;
+				prevDist = dist;
+				// step += dist * 0.25f; 
+				step += 1.0f;
+			}
+			else
+				step += 1.0f;
 				
 			}
 			else

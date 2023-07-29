@@ -34,9 +34,9 @@ src/cpu/raytracing/Raycasting.h
 )
 
 set(SOURCES
-src/gpu/frame/frame.cu
+# src/gpu/frame/frame.cu
 src/gpu/raytracing/raycasting.cu
-src/gpu/icp/icp.cu
+# src/gpu/icp/icp.cu
 src/gpu/tsdf/tsdf.cu
 src/cpu/tsdf/voxel_grid.cpp
 # src/cpu/tsdf/voxel_grid.cpp
@@ -44,7 +44,7 @@ src/cpu/tsdf/voxel_grid.cpp
 src/cpu/tsdf/voxel.cpp
 src/cpu/frame/Frame_Pyramid.cpp
 src/cpu/tsdf/kinect_fusion_utility.cpp
-src/Kinect_Fusion.cpp
+src/cpu/tsdf/test_tsdf.cpp
 )
 
 link_directories(${FreeImage_LIBRARY_DIR})

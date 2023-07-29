@@ -17,6 +17,7 @@ __device__
 double TSDF(double eta, double mu){
   if (eta >= -mu) return min(1.0, -eta / mu);
   return nan("1");
+  // return 5000.0f;
 }
 
 __device__ 
@@ -47,7 +48,7 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
 
   // Compute eta
   // we have to convert R_k values to meters
-  double eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]) *255.0f* 255.0f) / 5000.0;
+  double eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]) *255.0f* 255.0f / 5000.0);
 
   // Compute TSDF value
   double F_R_k_p = TSDF(eta, mu);
@@ -72,7 +73,7 @@ void update(kinect_fusion::Voxel *cu_grid,
       voxel.tsdfValue = F_R;
     }
     else{
-      voxel.tsdfValue = (voxel.tsdfValue + F_R) / 2;
+      voxel.tsdfValue = (voxel.tsdfValue + F_R);
     }
   }
 }
@@ -81,8 +82,9 @@ namespace kinect_fusion {
 
 VoxelGrid::VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_, Eigen::Vector3d ctr_of_mass) : 
                     dimX(dimX), dimY(dimY), dimZ(dimZ), dimYZ(dimY*dimZ), gridSize(gridSize_), 
-                    center(-0.5 * gridSize_ + ctr_of_mass) {
+                    center(ctr_of_mass) {
                     // center(-0.5*gridSize_){
+  std::cout<< center << std::endl;
   grid.resize(dimX * dimYZ);
   voxelSize = gridSize.cwiseQuotient(Eigen::Vector3d(dimX, dimY, dimZ));
   initializeGrid();
