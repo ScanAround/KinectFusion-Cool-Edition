@@ -96,29 +96,31 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 			
 			if (!outOfVolume(pGrid[0], pGrid[1], pGrid[2], dx, dy, dz))
 			{
-			intersected = true;
-			double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue;
-			if (!isnan(dist))
-			{
-				if (prevDist > 0 && dist <= 0 && s > 0)
-				{	
-					// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
-					Eigen::Vector3f n;
-					if(computeNormal(n, tsdf, pGrid, dx, dy, dz))
-					{
-						Eigen::Vector3f pWorld = gridToWorld(pGrid, min, max, ddx, ddy, ddz);
-						Vertex v = {pWorld, n};
-						vertices[j * width + i] = v;
-					}
+				intersected = true;
+				double dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue;
+				printf("x = %f, y = %f, z = %f", tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[0], tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[1], tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].position[2]);
+				// printf("%d \n", dist);
+				if (!isnan(dist))
+				{
+					if (prevDist > 0 && dist <= 0 && s > 0)
+					{	
+						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
+						Eigen::Vector3f n;
+						if(computeNormal(n, tsdf, pGrid, dx, dy, dz))
+						{
+							Eigen::Vector3f pWorld = gridToWorld(pGrid, min, max, ddx, ddy, ddz);
+							Vertex v = {pWorld, n};
+							vertices[j * width + i] = v;
+						}
 					
-					break;
+						break;
+					}
+					prevDist = dist;
+					// step += dist * 0.25f; 
+					step += 1.0f;
 				}
-				prevDist = dist;
-				// step += dist * 0.25f; 
-				step += 1.0f;
-			}
-			else
-				step += 1.0f;
+				else
+					step += 1.0f;
 				
 			}
 			else
@@ -190,8 +192,10 @@ void Raycasting::castAllCuda()
 	{
     	std::cout << "Problem in CudaMallocVertices: " << cudaGetErrorString(cudaStatusVertices) << std::endl;
     }
+	// std::cout << tsdf.getGrid().data()[2].position << std::endl;
+	// std::cout << tsdf.getGrid()[2].position << std::endl;
 
-	auto cudaCpyVol = cudaMemcpy(volume, tsdf.getGrid().data(), tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel), cudaMemcpyHostToDevice);
+	auto cudaCpyVol = cudaMemcpy(volume, tsdf.getGrid(), tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel), cudaMemcpyHostToDevice);
 	auto cudaCpyVertices = cudaMemcpy(verticesCuda, vertices, width * height * sizeof(Vertex), cudaMemcpyHostToDevice);
 	if(cudaCpyVol != cudaSuccess)
 	{

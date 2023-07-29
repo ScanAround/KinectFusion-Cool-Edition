@@ -36,6 +36,7 @@ src/cpu/raytracing/Raycasting.h
 set(SOURCES
 # src/gpu/frame/frame.cu
 src/gpu/raytracing/raycasting.cu
+src/cpu/frame/Frame.cpp
 # src/gpu/icp/icp.cu
 src/gpu/tsdf/tsdf.cu
 src/cpu/tsdf/voxel_grid.cpp

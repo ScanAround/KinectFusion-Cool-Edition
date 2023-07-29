@@ -14,7 +14,8 @@ namespace kinect_fusion {
 // Updated VoxelGrid
 class VoxelGrid {
 private:
-  std::vector<Voxel> grid;
+  // std::vector<Voxel> grid;
+  Voxel* grid;
   Voxel *cu_grid;
   size_t dimX, dimY, dimZ, dimYZ;
   float ddx, ddy, ddz;
@@ -48,6 +49,8 @@ public:
   // meters.
   VoxelGrid(size_t dimX, size_t dimY, size_t dimZ, Eigen::Vector3d gridSize_, Eigen::Vector3d center = Eigen::Vector3d::Zero());
 
+  ~VoxelGrid(){delete[] grid;}
+
   // The grid is initialized with the origin at [0,0,0] and center at gridSize * 0.5.
   void initializeGrid();
   
@@ -76,7 +79,7 @@ public:
   
 	Eigen::Vector3d getMax() const;
 
-  std::vector<Voxel> getGrid() const;
+  Voxel* getGrid() const;
 
   // Global fusion of all depth maps in the volume to a single TSDF as described in the research
   // paper "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/ismar_2011.pdf".
