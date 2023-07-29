@@ -299,6 +299,7 @@ Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rat
 }
 
 Frame::~Frame() {
+	std::cout << "Calling Frame destructor! \n" << std::endl;
 	if (dib != nullptr) { delete dib; }
 	if (Depth_k != nullptr) { delete[] Depth_k; }
 	// if(Raw_k != nullptr){delete Raw_k;}
@@ -332,15 +333,18 @@ void Frame::save_G_off_format(const std::string & where_to_save)
 {
         std::ofstream OffFile(where_to_save);
         this -> apply_G_transform();
-        for(auto i : M_k1){
+        for(unsigned int i = 0; i < width * height; ++i){
             if(abs(V_gk[i][0]) < MAXTHRESHOLD){
-                OffFile << "v " << V_gk[i][0] << " " << V_gk[i][1] << " " << V_gk[i][2] << std::endl; 
-                if(!std::isnan(N_gk[i][0]) && !std::isnan(N_gk[i][1]) && !std::isnan(N_gk[i][2])){
-                    OffFile << "vn " << N_gk[i][0] << " " << N_gk[i][1] << " " << N_gk[i][2] << std::endl;
+                if (V_gk[i][0] != MINF)
+                {
+                    OffFile << "v " << V_gk[i][0] << " " << V_gk[i][1] << " " << V_gk[i][2] << std::endl; 
+                    if(!std::isnan(N_gk[i][0]) && !std::isnan(N_gk[i][1]) && !std::isnan(N_gk[i][2])){
+                        OffFile << "vn " << N_gk[i][0] << " " << N_gk[i][1] << " " << N_gk[i][2] << std::endl;
+                    }
+                    else{
+                        OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
+                    } 
                 }
-                else{
-                    OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
-                } 
             }
         }
         OffFile.close();

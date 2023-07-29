@@ -56,6 +56,7 @@ T_gk(T_gk){
 }
 
 Frame_Pyramid::~Frame_Pyramid(){
+    std::cout << "Calling Frame_Pyramid destructor \n" << std::endl;
     delete[] Depth_Pyramid[0];
     delete[] Depth_Pyramid[1];
     delete[] Depth_Pyramid[2];
