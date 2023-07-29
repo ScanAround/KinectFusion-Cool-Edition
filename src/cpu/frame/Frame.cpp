@@ -62,16 +62,19 @@ void Frame::save_off_format(const std::string & where_to_save){
 void Frame::save_G_off_format(const std::string & where_to_save)
 {
         std::ofstream OffFile(where_to_save);
-        this -> apply_G_transform();
-        for(auto i : M_k1){
+        // this -> apply_G_transform();
+        for(unsigned int i = 0; i < width * height; ++i){
             if(abs(V_gk[i][0]) < MAXTHRESHOLD){
-                OffFile << "v " << V_gk[i][0] << " " << V_gk[i][1] << " " << V_gk[i][2] << std::endl; 
-                if(!std::isnan(N_gk[i][0]) && !std::isnan(N_gk[i][1]) && !std::isnan(N_gk[i][2])){
-                    OffFile << "vn " << N_gk[i][0] << " " << N_gk[i][1] << " " << N_gk[i][2] << std::endl;
+                if (V_gk[i][0] != MINF)
+                {
+                    OffFile << "v " << V_gk[i][0] << " " << V_gk[i][1] << " " << V_gk[i][2] << std::endl; 
+                    if(!std::isnan(N_gk[i][0]) && !std::isnan(N_gk[i][1]) && !std::isnan(N_gk[i][2])){
+                        OffFile << "vn " << N_gk[i][0] << " " << N_gk[i][1] << " " << N_gk[i][2] << std::endl;
+                    }
+                    else{
+                        OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
+                    } 
                 }
-                else{
-                    OffFile << "vn " << 0 << " " << 0 << " " << 0 << std::endl;
-                } 
             }
         }
         OffFile.close();
