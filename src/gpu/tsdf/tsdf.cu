@@ -46,12 +46,14 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
   Eigen::Vector2i x = vec_to_pixel(p, R_i, t_i, K, width, height);
 
   // Compute lambda
-  if(x[0] == -1 || x[1] == -1) return nan("1");
+  if(x[0] == -1 || x[1] == -1) {
+    return nan("1");
+  }
   double lambda = (K_i * x.cast<double>().homogeneous()).norm();
 
   // Compute eta
   // we have to convert R_k values to meters
-  double eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]) *255.0f* 255.0f / 5000.0);
+  double eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]) *255.0f* 255.0f / 5000.0f);
 
   // Compute TSDF value
   double F_R_k_p = TSDF(eta, mu);
@@ -72,7 +74,6 @@ void update(kinect_fusion::Voxel *cu_grid,
     kinect_fusion::Voxel& voxel = cu_grid[id_x*dimYZ + id_y*dimZ + id_z];
     Eigen::Vector3d p(voxel.position); // The point in the global frame
     double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, t, R, width, height, mu);
-    // double W_R = W_R_k
     if(!isnan(F_R)){
       if(isnan(voxel.tsdfValue)){
         voxel.tsdfValue = F_R * voxel.weight;
@@ -81,11 +82,6 @@ void update(kinect_fusion::Voxel *cu_grid,
         voxel.tsdfValue = (voxel.tsdfValue * voxel.weight + F_R) / (voxel.weight + 1.0);
       }
       voxel.weight += 1.0;
-    }
-    else{
-      if(id_x == 0, id_y == 0, id_z == 0)
-      voxel.tsdfValue = voxel.tsdfValue;
-      voxel.weight = voxel.weight;
     }
   }
 }

@@ -118,6 +118,7 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
     
     // source is the live frame F_k and the prev_frame is the ray-casted previous frame F_k-1
     Eigen::Matrix4f T_gk_z = curr_frame.T_gk;
+    Eigen::Matrix4f T_gk_z_temp;
     prev_frame.apply_G_transform();
     
     Eigen::Vector3f *curr_V_k;
@@ -235,12 +236,15 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
         float gamma = x[2];
 
 
-        T_gk_z <<      1 ,  alpha*beta - gamma , alpha*gamma + beta , x[3],
+        T_gk_z_temp <<      1 ,  alpha*beta - gamma , alpha*gamma + beta , x[3],
                 gamma ,  alpha*beta*gamma + 1   ,  beta*gamma - alpha , x[4],
                 -beta , alpha ,   1   , x[5],
                     0    ,  0    ,   0   ,  1  ; 
         
-        
+        T_gk_z = T_gk_z_temp * T_gk_z;
+
+        // curr_frame_pyramid->set_T_gk(T_gk_z);
+        // curr_frame_pyramid -> Depth_Pyramid[0]->save_G_off_format("iter" + std::to_string(i) + ".obj");
     }
         
     return T_gk_z;
