@@ -18,7 +18,7 @@ class Marching_Cubes{
         };
 
 
-        static void Mesher(kinect_fusion::VoxelGrid& grid, double isolevel, std::string off_dir = "mesh.off"){
+        static void Mesher(kinect_fusion::VoxelGrid& grid, std::string off_dir = "mesh.off"){
             // we want to create a mesh from an input voxel grid
             std::cout << "creating mesh from tsdf" << std::endl;
             std::ofstream OffFile(off_dir);
@@ -44,7 +44,7 @@ class Marching_Cubes{
                         cell.v[6] = grid.getVoxel(x, y+1, z+1); 
                         cell.v[7] = grid.getVoxel(x+1, y+1, z+1); 
 
-                        tmp_num_faces = Polyganize(cell, triangles, isolevel);
+                        tmp_num_faces = Polyganize(cell, triangles);
 
                         for(int triangle = 0; triangle < tmp_num_faces; ++triangle){
                             vertices.push_back({triangles[triangle].p[0][0], triangles[triangle].p[0][1],triangles[triangle].p[0][2]});
@@ -70,7 +70,7 @@ class Marching_Cubes{
             OffFile.close();
         };
 
-        static int Polyganize(MC_Grid grid, MC_Triangle* triangles, double isolevel) {
+        static int Polyganize(MC_Grid grid, MC_Triangle* triangles) {
             // adapted from 3D scanning and Motion capture tutorial
             // checks if voxels are below 0 and if so uses the interpolate function to find out where the vertex is and which triangle it would return
 
@@ -94,29 +94,29 @@ class Marching_Cubes{
 
             /* Find the vertices where the surface intersects the cube */
             if (edgeTable[cubeindex] & 1)
-                vertlist[0] = interpolate(grid.v[0], grid.v[1], isolevel);
+                vertlist[0] = interpolate(grid.v[0], grid.v[1]);
             if (edgeTable[cubeindex] & 2)
-                vertlist[1] = interpolate(grid.v[1], grid.v[2], isolevel);
+                vertlist[1] = interpolate(grid.v[1], grid.v[2]);
             if (edgeTable[cubeindex] & 4)
-                vertlist[2] = interpolate(grid.v[2], grid.v[3], isolevel);
+                vertlist[2] = interpolate(grid.v[2], grid.v[3]);
             if (edgeTable[cubeindex] & 8)
-                vertlist[3] = interpolate(grid.v[3], grid.v[0], isolevel);
+                vertlist[3] = interpolate(grid.v[3], grid.v[0]);
             if (edgeTable[cubeindex] & 16)
-                vertlist[4] = interpolate(grid.v[4], grid.v[5], isolevel);
+                vertlist[4] = interpolate(grid.v[4], grid.v[5]);
             if (edgeTable[cubeindex] & 32)
-                vertlist[5] = interpolate(grid.v[5], grid.v[6], isolevel);
+                vertlist[5] = interpolate(grid.v[5], grid.v[6]);
             if (edgeTable[cubeindex] & 64)
-                vertlist[6] = interpolate(grid.v[6], grid.v[7], isolevel);
+                vertlist[6] = interpolate(grid.v[6], grid.v[7]);
             if (edgeTable[cubeindex] & 128)
-                vertlist[7] = interpolate(grid.v[7], grid.v[4], isolevel);
+                vertlist[7] = interpolate(grid.v[7], grid.v[4]);
             if (edgeTable[cubeindex] & 256)
-                vertlist[8] = interpolate(grid.v[0], grid.v[4], isolevel);
+                vertlist[8] = interpolate(grid.v[0], grid.v[4]);
             if (edgeTable[cubeindex] & 512)
-                vertlist[9] = interpolate(grid.v[1], grid.v[5], isolevel);
+                vertlist[9] = interpolate(grid.v[1], grid.v[5]);
             if (edgeTable[cubeindex] & 1024)
-                vertlist[10] = interpolate(grid.v[2], grid.v[6], isolevel);
+                vertlist[10] = interpolate(grid.v[2], grid.v[6]);
             if (edgeTable[cubeindex] & 2048)
-                vertlist[11] = interpolate(grid.v[3], grid.v[7], isolevel);
+                vertlist[11] = interpolate(grid.v[3], grid.v[7]);
 
             /* Create the triangle */
             ntriang = 0;
@@ -134,9 +134,9 @@ class Marching_Cubes{
             return ntriang;
         }
 
-        static inline Eigen::Vector3d interpolate(kinect_fusion::Voxel & voxel1, kinect_fusion::Voxel& voxel2, double isolevel){
+        static inline Eigen::Vector3d interpolate(kinect_fusion::Voxel & voxel1, kinect_fusion::Voxel& voxel2){
         // finding the zero crossing value p between voxel1 and voxel2
-        double lambda = (voxel1.tsdfValue - isolevel) / (voxel1.tsdfValue - voxel2.tsdfValue);
+        double lambda = (0 - voxel1.tsdfValue) / (voxel2.tsdfValue - voxel1.tsdfValue);
         return (voxel2.position - voxel1.position) * lambda + voxel1.position;
     };
 };
