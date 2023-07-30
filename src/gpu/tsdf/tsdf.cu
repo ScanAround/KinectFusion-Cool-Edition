@@ -3,6 +3,7 @@
 #include "../../cpu/tsdf/kinect_fusion_utility.h"
 #include "../../cpu/mesher/Marching_Cubes.h"
 #include <eigen3/Eigen/Dense>
+#define MINF -std::numeric_limits<float>::infinity()
 
 __global__ 
 void initialize(kinect_fusion::Voxel *cu_grid, int dimX, int dimY, int dimZ, int dimYZ, Eigen::Vector3d voxelSize, dim3 thread_nums, Eigen::Vector3d center){
@@ -46,7 +47,7 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
   Eigen::Vector2i x = vec_to_pixel(p, R_i, t_i, K, width, height);
 
   // Compute lambda
-  if(x[0] == -1 || x[1] == -1) {
+  if(x[0] == -1 || x[1] == -1 || isnan(R[x[1]*width + x[0]]) || R[x[1]*width + x[0]] <= 0.0f) {
     return nan("1");
   }
   double lambda = (K_i * x.cast<double>().homogeneous()).norm();
@@ -76,7 +77,7 @@ void update(kinect_fusion::Voxel *cu_grid,
     double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, t, R, width, height, mu);
     if(!isnan(F_R)){
       if(isnan(voxel.tsdfValue)){
-        voxel.tsdfValue = F_R * voxel.weight;
+        voxel.tsdfValue = F_R;
       }
       else{
         voxel.tsdfValue = (voxel.tsdfValue * voxel.weight + F_R) / (voxel.weight + 1.0);
@@ -166,7 +167,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
   update <<<block_nums,thread_nums>>> (cu_grid, dimX, dimY, dimZ, dimYZ, 
                                        voxelSize, K , K_i, R_i, t_i, t,
                                        R, curr_frame.width, curr_frame.height, mu, thread_nums);
-  cudaDeviceSynchronize();
+ cudaDeviceSynchronize();
   
   cudaError_t cudaStatus2 = cudaMemcpy(grid.data(), cu_grid, dimX * dimYZ * sizeof(Voxel), cudaMemcpyDeviceToHost);
   if(cudaStatus2 != cudaSuccess){
