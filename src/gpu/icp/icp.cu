@@ -193,8 +193,8 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             prev_frame.T_gk.inverse().block(0,0,3,3), prev_frame.T_gk.inverse().block(0,3,3,1),
             curr_V_k, curr_N_k,
             prev_V_gk, prev_N_gk,
-            prev_frame.K_calibration, 
-            prev_frame.width, prev_frame.height, 
+            curr_frame.K_calibration, 
+            curr_frame.width, curr_frame.height, 
             distance_threshold, angle_threshold
         );
         cudaDeviceSynchronize();
