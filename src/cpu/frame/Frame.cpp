@@ -111,6 +111,7 @@ width(width), height(height), T_gk(T_gk), V_gk(V_gks), N_gk(N_gks){
     K_calibration  <<  525.0f , 0.0f, 319.5f,
                         0.0f, 525.0f, 239.5f,
                         0.0f, 0.0f, 1.0f;
+    this -> transformed = true;
     
 }
 
