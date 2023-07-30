@@ -11,6 +11,8 @@ void initialize(kinect_fusion::Voxel *cu_grid, int dimX, int dimY, int dimZ, int
   int id_z = threadIdx.z + blockIdx.z * thread_nums.z;
   if(id_x < dimX && id_y < dimY && id_z < dimZ){
     cu_grid[id_x*dimYZ + id_y*dimZ + id_z].position = voxelSize.cwiseProduct(Eigen::Vector3d(id_x, id_y, id_z)) + voxelSize * 0.5 + center;
+    cu_grid[id_x*dimYZ + id_y*dimZ + id_z].weight = 1.0;
+    cu_grid[id_x*dimYZ + id_y*dimZ + id_z].tsdfValue = nan("1");
   }
 }
 __device__
@@ -35,7 +37,7 @@ Eigen::Vector2i vec_to_pixel(const Eigen::Vector3d vec, Eigen::Matrix3d R_i, Eig
       u << int(u_dot[0]), int(u_dot[1]);
   }
   else{
-      u << 0,0 ;
+      u << -1, -1 ;
   }
   return u;
 }
@@ -44,6 +46,7 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
   Eigen::Vector2i x = vec_to_pixel(p, R_i, t_i, K, width, height);
 
   // Compute lambda
+  if(x[0] == -1 || x[1] == -1) return nan("1");
   double lambda = (K_i * x.cast<double>().homogeneous()).norm();
 
   // Compute eta
@@ -69,11 +72,20 @@ void update(kinect_fusion::Voxel *cu_grid,
     kinect_fusion::Voxel& voxel = cu_grid[id_x*dimYZ + id_y*dimZ + id_z];
     Eigen::Vector3d p(voxel.position); // The point in the global frame
     double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, t, R, width, height, mu);
-    if(isnan(voxel.tsdfValue)){
-      voxel.tsdfValue = F_R;
+    // double W_R = W_R_k
+    if(!isnan(F_R)){
+      if(isnan(voxel.tsdfValue)){
+        voxel.tsdfValue = F_R * voxel.weight;
+      }
+      else{
+        voxel.tsdfValue = (voxel.tsdfValue * voxel.weight + F_R) / (voxel.weight + 1.0);
+      }
+      voxel.weight += 1.0;
     }
     else{
-      voxel.tsdfValue = (voxel.tsdfValue + F_R);
+      if(id_x == 0, id_y == 0, id_z == 0)
+      voxel.tsdfValue = voxel.tsdfValue;
+      voxel.weight = voxel.weight;
     }
   }
 }

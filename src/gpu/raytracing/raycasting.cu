@@ -103,6 +103,8 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 				if (!isnan(dist))
 				{
 					if (prevDist > 0 && dist <= 0 && s > 0)
+						break;
+					if (prevDist < 0 && dist >= 0 && s > 0)
 					{	
 						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
 						Eigen::Vector3f n;

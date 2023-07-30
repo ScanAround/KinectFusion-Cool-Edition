@@ -73,7 +73,7 @@ void A_b_finder_block(
                 && !isnan(prev_V_gk[idx_in_prev][0])
                 && !isnan(curr_V_k_t[0])){
                     if((curr_V_k_t - prev_V_gk[idx_in_prev]).norm() <= d_thresh){
-                        if(curr_N_k_t.dot(prev_N_gk[idx_in_prev]) >= a_thresh){
+                        if(abs(curr_N_k_t.dot(prev_N_gk[idx_in_prev])) >= a_thresh){
                             Eigen::Matrix<float, 3, 1, Eigen::ColMajor> s_i = curr_V_k_t; // already transformed
                             Eigen::Matrix<float, 3, 1, Eigen::ColMajor> d_i = prev_V_gk[idx_in_prev];
                             Eigen::Matrix<float, 3, 1, Eigen::ColMajor> n_i = prev_N_gk[idx_in_prev];

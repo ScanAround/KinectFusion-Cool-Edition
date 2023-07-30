@@ -72,7 +72,7 @@ void calculate_Vks_cuda(Eigen::Matrix3f K_i,
 			dMk_0[id_x * width + id_y] = id_x * width + id_y;
 		}
 		else {
-			dV_k[id_x * width + id_y] = Depth_k[id_x * width + id_y] / 5000.0f * K_i * u_dot;
+			dV_k[id_x * width + id_y] = Depth_k[id_x * width + id_y] * 255.0f * 255.0f / 5000.0f * K_i * u_dot;
 			dMk_1[id_x * width + id_y] = id_x * width + id_y;
 		}
 	}
