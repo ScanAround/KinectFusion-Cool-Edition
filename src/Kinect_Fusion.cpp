@@ -26,7 +26,7 @@ int main(){
     
     //somehow we're getting a problem because of our initial T_gk probably
     grid.updateGlobalTSDF(*curr_frame.Depth_Pyramid[0], mu);
-    mesher -> Mesher(grid, 0, "outputs/meshes/mesh_1.off");
+    mesher -> Mesher(grid, "outputs/meshes/mesh_1.off");
     auto T = curr_frame.T_gk;
 
     for(int file_idx = 0; file_idx < filenames.size()-1; ++file_idx){
@@ -45,7 +45,7 @@ int main(){
         curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/pc" +std::to_string(file_idx) + ".obj");
         curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G" +std::to_string(file_idx) + ".obj");
 
-        mesher -> Mesher(grid, 0, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
+        mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
     }
 
     FreeImage_DeInitialise();
