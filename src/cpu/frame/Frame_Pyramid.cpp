@@ -50,8 +50,8 @@ Frame_Pyramid::Frame_Pyramid(std::vector<Eigen::Vector3f> V_gks, std::vector<Eig
 T_gk(T_gk){
 
     Depth_Pyramid[0] = new Frame(V_gks, N_gks, T_gk, width, height);
-    Depth_Pyramid[1] = Depth_Pyramid[0];
-    Depth_Pyramid[2] = Depth_Pyramid[0];
+    Depth_Pyramid[1] = new Frame(V_gks, N_gks, T_gk, width, height);
+    Depth_Pyramid[2] = new Frame(V_gks, N_gks, T_gk, width, height);
 
 }
 

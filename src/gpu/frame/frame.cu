@@ -299,10 +299,15 @@ Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rat
 }
 
 Frame::~Frame() {
-	std::cout << "Calling Frame destructor! \n" << std::endl;
+	std::cout << "Calling Frame destructor (dib)! \n" << std::endl;
 	if (dib != nullptr) { delete dib; }
+	std::cout << "Calling Frame destructor (depth)! \n" << std::endl;
 	if (Depth_k != nullptr) { delete[] Depth_k; }
-	// if(Raw_k != nullptr){delete Raw_k;}
+	std::cout << "Calling Frame destructor (raw)! \n" << std::endl;
+	if(Raw_k != nullptr){delete[] Raw_k;}
+	std::cout << "Calling Frame destructor (filtered_dib)! \n" << std::endl;
+	if(filtered_dib != nullptr){delete filtered_dib;}
+
 }
 
 void Frame::process_image(float sigma_r, float sigma_s, int filter_size, bool apply_bilateral) {

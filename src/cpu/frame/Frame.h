@@ -108,7 +108,7 @@ public:
     
     Eigen::Matrix3f K_calibration;
     
-    FIBITMAP * filtered_dib;
+    FIBITMAP * filtered_dib = nullptr;
     //width and height of the image
     int width;
     int height;
@@ -118,14 +118,14 @@ public:
     int get_R_size(){
         return sizeof(Raw_k);
     }
-    float * Raw_k;
+    float * Raw_k = nullptr;
     Eigen::Vector3f center_of_mass = Eigen::Vector3f::Zero();
 
-    FIBITMAP * dib;
+    FIBITMAP * dib = nullptr;
 private:
     // FIBITMAP * dib;
     //Initial Raw Depth Map
     //Depth Map
-    float * Depth_k; 
+    float * Depth_k = nullptr;
 };
 #endif
