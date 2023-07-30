@@ -8,7 +8,7 @@
 #include <vector>
 #include <cstdlib>
 #include <limits>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 
 typedef unsigned int uint;
 

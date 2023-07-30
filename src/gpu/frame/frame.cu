@@ -4,10 +4,7 @@
 #include <fstream>
 #include <FreeImage.h>
 #include <vector>
-#include <Eigen/Dense>
-#ifndef CUDACC
-#define CUDACC
-#endif
+#include <eigen3/Eigen/Dense>
 #define MINF -std::numeric_limits<float>::infinity()
 
 #define MAXTHRESHOLD 10

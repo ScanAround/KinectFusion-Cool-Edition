@@ -2,7 +2,7 @@
 #include "../../cpu/tsdf/voxel.h"
 #include "../../cpu/tsdf/kinect_fusion_utility.h"
 #include "../../cpu/mesher/Marching_Cubes.h"
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 
 __global__ 
 void initialize(kinect_fusion::Voxel *cu_grid, int dimX, int dimY, int dimZ, int dimYZ, Eigen::Vector3d voxelSize, dim3 thread_nums, Eigen::Vector3d center){

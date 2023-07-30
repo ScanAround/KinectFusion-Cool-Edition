@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include "../frame/Frame_Pyramid.h"
 #include <FreeImage.h>
 

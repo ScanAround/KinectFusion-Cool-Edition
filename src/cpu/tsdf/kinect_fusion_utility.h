@@ -1,7 +1,7 @@
 #pragma once
 
-#include <windows.h>
-#include <Eigen/Dense>
+// #include <windows.h>
+#include <eigen3/Eigen/Dense>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -12,7 +12,8 @@
 // #include <opencv4/opencv2/opencv.hpp>
 // #include <opencv4/opencv2/opencv.hpp>
 #include <FreeImage.h>
-#include "C:\\Users\\marcw\\Desktop\\BMC_TUM\\sose23\\3dsmc\\Exercises\\Libs\\dirent-1.21\\include\\dirent.h"
+// #include "C:\\Users\\marcw\\Desktop\\BMC_TUM\\sose23\\3dsmc\\Exercises\\Libs\\dirent-1.21\\include\\dirent.h"
+#include <dirent.h>
 #include <algorithm>
 #include "voxel_grid.h"
 

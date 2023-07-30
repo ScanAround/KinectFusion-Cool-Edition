@@ -1,7 +1,7 @@
 #ifndef RAYCASTING_H
 #define RAYCASTING_H
 
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
 #include <vector>
 // #include "Volume.h"
 // #include "Ray.h"
