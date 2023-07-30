@@ -6,6 +6,9 @@
 #include "cpu/mesher/Marching_Cubes.h"
 
 int main(){
+
+    FreeImage_Initialise();
+    
     //initiating mesher
     std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
     
@@ -48,4 +51,6 @@ int main(){
 
         mesher -> Mesher(grid, 0, "outputs\\meshes\\mesh" + std::to_string(file_idx) + ".off");
     }
+
+    FreeImage_DeInitialise();
 }

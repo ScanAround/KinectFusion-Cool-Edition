@@ -280,7 +280,7 @@ Frame::Frame(FIBITMAP& dib, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
 Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
 	dib(FreeImage_ConvertToFloat(FreeImage_Load(FreeImage_GetFileType(image_dir), image_dir))) {
 
-	FreeImage_Initialise();
+	// FreeImage_Initialise();
 
 	width = FreeImage_GetWidth(this->dib);
 	height = FreeImage_GetHeight(this->dib);
@@ -295,18 +295,27 @@ Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rat
 
 	this->T_gk = T_gk;
 
-	FreeImage_DeInitialise();
+	// FreeImage_DeInitialise();
 }
 
 Frame::~Frame() {
-	std::cout << "Calling Frame destructor (dib)! \n" << std::endl;
-	if (dib != nullptr) { delete dib; }
-	std::cout << "Calling Frame destructor (depth)! \n" << std::endl;
-	if (Depth_k != nullptr) { delete[] Depth_k; }
-	std::cout << "Calling Frame destructor (raw)! \n" << std::endl;
-	if(Raw_k != nullptr){delete[] Raw_k;}
-	std::cout << "Calling Frame destructor (filtered_dib)! \n" << std::endl;
-	if(filtered_dib != nullptr){delete filtered_dib;}
+	
+	if (dib != nullptr) { 
+		FreeImage_Unload(dib);
+		dib = nullptr;
+	}
+	if (Depth_k != nullptr) { 
+		delete[] Depth_k;
+		Depth_k = nullptr;
+	}
+	if(Raw_k != nullptr){
+//		FreeImage_Unload((FITBITMAP *)Raw_k);
+		Raw_k = nullptr;
+	}
+	if(filtered_dib != nullptr){
+		FreeImage_Unload(filtered_dib);
+		filtered_dib = nullptr;
+	}
 
 }
 
