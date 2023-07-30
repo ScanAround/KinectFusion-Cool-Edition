@@ -20,7 +20,7 @@ int main(){
     
     //initiating grid
     Eigen::Vector3d gridSize(4,4,4); 
-    unsigned int res = 128;
+    unsigned int res = 256;
     kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass.cast<double>());
     float mu = 0.02;
     
@@ -29,11 +29,10 @@ int main(){
     mesher -> Mesher(grid, 0, "outputs/meshes/mesh_1.off");
     auto T = curr_frame.T_gk;
 
-    for(int file_idx = 0; file_idx < filenames.size(); ++file_idx){
-        // Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
-        // prev_r.castAllCuda();
-        Frame_Pyramid prev_frame(s_dir + "/" + filenames[file_idx]);
-        prev_frame.set_T_gk(T);
+    for(int file_idx = 0; file_idx < filenames.size()-1; ++file_idx){
+        Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
+        prev_r.castAllCuda();
+        Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
         prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G_previous" + std::to_string(file_idx) + ".obj");
 
         Frame_Pyramid curr_frame_(s_dir + "/" + filenames[file_idx + 1]);
@@ -41,12 +40,8 @@ int main(){
         
         ICP icp(curr_frame_, prev_frame, 0.1f, 0.5f);
         T = icp.pyramid_ICP(false);
-        // T = T_curr;
-        // curr_frame_.set_T_gk(T);
 
         grid.updateGlobalTSDF(*curr_frame_.Depth_Pyramid[0], mu);
-        kinect_fusion::utility::writeTSDFToFile("grid" + std::to_string(file_idx) + ".txt", grid);
-        
         curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/pc" +std::to_string(file_idx) + ".obj");
         curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G" +std::to_string(file_idx) + ".obj");
 
