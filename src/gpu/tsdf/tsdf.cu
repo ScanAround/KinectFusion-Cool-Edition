@@ -116,9 +116,9 @@ void VoxelGrid::initializeGrid() {
     std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus2) << std::endl;
   };
 
-  ddx = 1.0f / (dimX - 1);
-  ddy = 1.0f / (dimY - 1);
-  ddz = 1.0f / (dimZ - 1);
+  ddx = 4.0f / (dimX - 1);
+  ddy = 4.0f / (dimY - 1);
+  ddz = 4.0f / (dimZ - 1);
 
   max = grid[(dimX-1)*dimYZ + (dimY-1)*dimZ + (dimZ-1)].position;
   min = grid[0].position;

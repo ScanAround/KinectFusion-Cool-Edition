@@ -20,7 +20,7 @@ int main(){
     
     //initiating grid
     Eigen::Vector3d gridSize(4,4,4); 
-    unsigned int res = 400;
+    unsigned int res = 256;
     kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass.cast<double>());
     float mu = 0.02;
     
@@ -30,10 +30,10 @@ int main(){
     auto T = curr_frame.T_gk;
 
     for(int file_idx = 0; file_idx < filenames.size()-1; ++file_idx){
-        /*Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
+        Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
         prev_r.castAllCuda();
-        Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);*/
-        Frame_Pyramid prev_frame(s_dir + "\\" + filenames[file_idx]);
+        Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
+        // Frame_Pyramid prev_frame(s_dir + "\\" + filenames[file_idx]);
         prev_frame.set_T_gk(T);
 
         // prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G_previous" + std::to_string(file_idx) + ".obj");
