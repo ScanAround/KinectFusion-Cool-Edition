@@ -63,9 +63,6 @@ double mu = 0.02;
 
 grid.updateGlobalTSDF(*frame1, mu);
 
-// std::vector<Eigen::Vector3f> vertices;
-// std::vector<Eigen::Vector3f> normals;
-
 Eigen::Matrix3f rotation; 
 rotation << float(pose(0, 0)), float(pose(0, 1)), float(pose(0, 2)),
             float(pose(1, 0)), float(pose(1, 1)), float(pose(1, 2)),

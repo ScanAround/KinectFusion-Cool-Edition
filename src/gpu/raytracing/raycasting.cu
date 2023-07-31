@@ -55,29 +55,11 @@ bool computeNormal(Eigen::Vector3f& n, kinect_fusion::Voxel* tsdf, const Eigen::
 		double deltaY = tsdf[p[0]*dy*dz + (p[1] + 1)*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + (p[1] - 1)*dz + p[2]].tsdfValue;
 		double deltaZ = tsdf[p[0]*dy*dz + p[1]*dz + (p[2] + 1)].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + (p[2] - 1)].tsdfValue;
 		
-		// double deltaX = tsdf[(p[0] + 1)*dy*dz + p[1]*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + p[2]].tsdfValue;
-		// double deltaY = tsdf[p[0]*dy*dz + (p[1] + 1)*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + p[2]].tsdfValue;
-		// double deltaZ = tsdf[p[0]*dy*dz + p[1]*dz + (p[2] + 1)].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + p[2]].tsdfValue;
-		
 		double gradX = deltaX / 2.0f;
 		double gradY = deltaY / 2.0f;
 		double gradZ = deltaZ / 2.0f;
-		
-		// double gradX = deltaX;
-		// double gradY = deltaY;
-		// double gradZ = deltaZ;
 
 		n << -gradX, -gradY, -gradZ;
-		/*if (isnan(gradX) || isnan(gradY) || isnan(gradZ)) {
-			printf("%f\n", tsdf[(p[0] + 1) * dy * dz + p[1] * dz + p[2]].tsdfValue);
-			printf("%f\n", tsdf[(p[0] - 1) * dy * dz + p[1] * dz + p[2]].tsdfValue);
-			printf("%f\n", tsdf[p[0] * dy * dz + (p[1] + 1) * dz + p[2]].tsdfValue);
-			printf("%f\n", tsdf[p[0] * dy * dz + (p[1] - 1) * dz + p[2]].tsdfValue);
-			printf("%f\n", tsdf[p[0] * dy * dz + p[1] * dz + (p[2] + 1)].tsdfValue);
-			printf("%f\n", tsdf[p[0] * dy * dz + p[1] * dz + (p[2] - 1)].tsdfValue);
-
-			printf("error");
-		}*/
 		n.normalize();
 
 		return true;
