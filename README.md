@@ -19,7 +19,7 @@ make
 cd ..
 ./KinectFusionApp_Cuda
 ```
-# Instruction for Windows
+## (Windows) Instructions
 
 In order to run the code in Windows systems, use the `main_windows` branch. There you will find the CMakeLists.txt. it is necessary to compile with C++17 or higher. 
 
