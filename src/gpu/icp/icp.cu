@@ -193,8 +193,8 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             prev_frame.T_gk.inverse().block(0,0,3,3), prev_frame.T_gk.inverse().block(0,3,3,1),
             curr_V_k, curr_N_k,
             prev_V_gk, prev_N_gk,
-            curr_frame.K_calibration, 
-            curr_frame.width, curr_frame.height, 
+            prev_frame.K_calibration, 
+            prev_frame.width, prev_frame.height, 
             distance_threshold, angle_threshold
         );
         cudaDeviceSynchronize();
@@ -252,15 +252,15 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
 }
 
 Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
-    std::cout << "Registering 3rd Frame Pyramid Level" << std::endl;
+    // std::cout << "Registering 3rd Frame Pyramid Level" << std::endl;
     Eigen::Matrix4f T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[2], *prev_frame_pyramid -> Depth_Pyramid[2], 4, cuda);
     curr_frame_pyramid -> set_T_gk(T);
     
-    std::cout << "Registering 2nd Frame Pyramid Level" << std::endl;
+    // std::cout << "Registering 2nd Frame Pyramid Level" << std::endl;
     T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[1], *prev_frame_pyramid -> Depth_Pyramid[1], 5, cuda);
     curr_frame_pyramid -> set_T_gk(T);
     
-    std::cout << "Registering 1st Frame Pyramid Level" << std::endl;
+    // std::cout << "Registering 1st Frame Pyramid Level" << std::endl;
     T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[0], *prev_frame_pyramid -> Depth_Pyramid[0], 10, cuda);
     curr_frame_pyramid -> set_T_gk(T);
 
