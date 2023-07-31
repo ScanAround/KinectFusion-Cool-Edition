@@ -30,22 +30,25 @@ int main(){
     auto T = curr_frame.T_gk;
 
     for(int file_idx = 0; file_idx < filenames.size()-1; ++file_idx){
-        Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
-        prev_r.castAllCuda();
-        Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
-        prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G_previous" + std::to_string(file_idx) + ".obj");
+        // Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
+        // prev_r.castAllCuda();
+        // Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
+        Frame_Pyramid prev_frame(s_dir + "/" + filenames[file_idx]);
+        prev_frame.set_T_gk(T);
+
+        // prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G_previous" + std::to_string(file_idx) + ".obj");
 
         Frame_Pyramid curr_frame_(s_dir + "/" + filenames[file_idx + 1]);
-        // curr_frame_.set_T_gk(T); // done so converging is faster (theoretically + still testing)
+        curr_frame_.set_T_gk(T); // done so converging is faster (theoretically + still testing)
         
-        ICP icp(curr_frame_, prev_frame, 0.1f, 0.5f);
+        ICP icp(curr_frame_, prev_frame, 0.1f, 0.7f);
         T = icp.pyramid_ICP(false);
 
         grid.updateGlobalTSDF(*curr_frame_.Depth_Pyramid[0], mu);
-        curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/pc" +std::to_string(file_idx) + ".obj");
-        curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G" +std::to_string(file_idx) + ".obj");
+        // curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/pc" +std::to_string(file_idx) + ".obj");
+        // curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G" +std::to_string(file_idx) + ".obj");
 
-        mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
+        if(file_idx != 0 && file_idx % 5 == 0) mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
     }
 
     FreeImage_DeInitialise();
