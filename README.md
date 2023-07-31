@@ -17,5 +17,5 @@ mkdir build && cd build
 cmake ..
 make
 cd ..
-./Kinect_Fusion.cpp
+./KinectFusionApp_Cuda
 ```
