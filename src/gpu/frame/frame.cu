@@ -274,6 +274,17 @@ Frame::Frame(FIBITMAP& dib, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
 		0.0f, 0.0f, 1.0f;
 }
 
+Frame::Frame(std::vector<float> depthMap, Eigen::Matrix4f T_gk, Eigen::Matrix3f K, int width, int height, float sub_sampling_rate) :
+	dib(nullptr), T_gk(T_gk), K_calibration(K), Raw_k(depthMap.data()), width(width), height(height) {
+	// live sensor constructor
+	K(0,0) /= sub_sampling_rate;
+	K(0,2) /= sub_sampling_rate;
+	K(1,1) /= sub_sampling_rate;
+	K(1,2) /= sub_sampling_rate;
+	
+	Depth_k = new float[width * height]; // have to rescale according to the data 
+}
+
 Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
 	dib(FreeImage_ConvertToFloat(FreeImage_Load(FreeImage_GetFileType(image_dir), image_dir))) {
 
