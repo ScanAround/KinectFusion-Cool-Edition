@@ -33,25 +33,18 @@ int main(){
         Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
         prev_r.castAllCuda();
         Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
-        // Frame_Pyramid prev_frame(s_dir + "/" + filenames[file_idx]);
         prev_frame.set_T_gk(T);
-
-        // prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G_previous" + std::to_string(file_idx) + ".obj");
 
         Frame_Pyramid curr_frame_(s_dir + "/" + filenames[file_idx + 1]);
         curr_frame_.set_T_gk(T); // done so converging is faster (theoretically + still testing)
-        // curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/bic_pc" +std::to_string(file_idx) + ".obj");
-        // curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/bic_pc_G" +std::to_string(file_idx) + ".obj");
         
-        ICP icp(curr_frame_, prev_frame, 0.04f, 0.5f);
+        ICP icp(curr_frame_, prev_frame, 0.05f, 0.95f);
         T = icp.pyramid_ICP(false);
 
         grid.updateGlobalTSDF(*curr_frame_.Depth_Pyramid[0], mu);
 
-        if(file_idx != 0 && file_idx % 5 == 0) {
+        if(file_idx != 0 && file_idx % 20 == 0) {
             mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
-            curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/pc" +std::to_string(file_idx) + ".obj");
-            curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G" +std::to_string(file_idx) + ".obj");
         }
     }
 
