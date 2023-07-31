@@ -56,6 +56,17 @@ T_gk(T_gk){
 
 }
 
+Frame_Pyramid::Frame_Pyramid(std::vector<float> depthMap,
+                             Eigen::Matrix3f K, Eigen::Matrix4f T_gk,
+                             int width, int height){
+        
+    Depth_Pyramid[0] = new Frame(depthMap, T_gk, K, width, height, 1.0f);
+    Depth_Pyramid[0] = new Frame(depthMap, T_gk, K, width, height, 2.0f);
+    Depth_Pyramid[0] = new Frame(depthMap, T_gk, K, width, height, 4.0f);
+    this -> set_T_gk(T_gk);
+}
+
+
 Frame_Pyramid::~Frame_Pyramid(){
     delete Depth_Pyramid[0];
     Depth_Pyramid[0] = nullptr;
