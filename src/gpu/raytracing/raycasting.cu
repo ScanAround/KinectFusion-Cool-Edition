@@ -50,9 +50,9 @@ bool computeNormal(Eigen::Vector3f& n, kinect_fusion::Voxel* tsdf, const Eigen::
 		double deltaY = tsdf[p[0]*dy*dz + (p[1] + 1)*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + (p[1] - 1)*dz + p[2]].tsdfValue;
 		double deltaZ = tsdf[p[0]*dy*dz + p[1]*dz + (p[2] + 1)].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + (p[2] - 1)].tsdfValue;
 		
-		double gradX = deltaX / 2.0f;
-		double gradY = deltaY / 2.0f;
-		double gradZ = deltaZ / 2.0f;
+		double gradX = -deltaX / 2.0f;
+		double gradY = -deltaY / 2.0f;
+		double gradZ = -deltaZ / 2.0f;
 
 		n << gradX, gradY, gradZ;
 		n.normalize();
@@ -103,8 +103,8 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 				if (!isnan(dist))
 				{
 					if (prevDist > 0 && dist <= 0 && s > 0)
-						break;
-					if (prevDist < 0 && dist >= 0 && s > 0)
+					// 	break;
+					// if (prevDist < 0 && dist >= 0 && s > 0)
 					{	
 						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
 						Eigen::Vector3f n;
