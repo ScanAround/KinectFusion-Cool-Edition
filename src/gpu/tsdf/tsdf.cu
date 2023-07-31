@@ -2,7 +2,7 @@
 #include "../../cpu/tsdf/voxel.h"
 #include "../../cpu/tsdf/kinect_fusion_utility.h"
 #include "../../cpu/mesher/Marching_Cubes.h"
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #define MINF -std::numeric_limits<float>::infinity()
 
 __global__ 

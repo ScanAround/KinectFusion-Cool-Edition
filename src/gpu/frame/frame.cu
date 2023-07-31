@@ -4,7 +4,7 @@
 #include <fstream>
 #include <FreeImage.h>
 #include <vector>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #define MINF -std::numeric_limits<float>::infinity()
 
 #define MAXTHRESHOLD 10
