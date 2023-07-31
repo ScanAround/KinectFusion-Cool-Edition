@@ -2,6 +2,11 @@
 #include "../../cpu/raytracing/Raycasting.h"
 #include "../../cpu/tsdf/voxel.h"
 
+//#include "cuda_runtime.h"
+//#include "device_launch_parameters.h"
+//#include <cuda.h>
+//#include <cuda_runtime_api.h>
+
 /* CUDA */
 
 __device__
@@ -50,11 +55,29 @@ bool computeNormal(Eigen::Vector3f& n, kinect_fusion::Voxel* tsdf, const Eigen::
 		double deltaY = tsdf[p[0]*dy*dz + (p[1] + 1)*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + (p[1] - 1)*dz + p[2]].tsdfValue;
 		double deltaZ = tsdf[p[0]*dy*dz + p[1]*dz + (p[2] + 1)].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + (p[2] - 1)].tsdfValue;
 		
+		// double deltaX = tsdf[(p[0] + 1)*dy*dz + p[1]*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + p[2]].tsdfValue;
+		// double deltaY = tsdf[p[0]*dy*dz + (p[1] + 1)*dz + p[2]].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + p[2]].tsdfValue;
+		// double deltaZ = tsdf[p[0]*dy*dz + p[1]*dz + (p[2] + 1)].tsdfValue - tsdf[p[0]*dy*dz + p[1]*dz + p[2]].tsdfValue;
+		
 		double gradX = deltaX / 2.0f;
 		double gradY = deltaY / 2.0f;
 		double gradZ = deltaZ / 2.0f;
+		
+		// double gradX = deltaX;
+		// double gradY = deltaY;
+		// double gradZ = deltaZ;
 
-		n << gradX, gradY, gradZ;
+		n << -gradX, -gradY, -gradZ;
+		/*if (isnan(gradX) || isnan(gradY) || isnan(gradZ)) {
+			printf("%f\n", tsdf[(p[0] + 1) * dy * dz + p[1] * dz + p[2]].tsdfValue);
+			printf("%f\n", tsdf[(p[0] - 1) * dy * dz + p[1] * dz + p[2]].tsdfValue);
+			printf("%f\n", tsdf[p[0] * dy * dz + (p[1] + 1) * dz + p[2]].tsdfValue);
+			printf("%f\n", tsdf[p[0] * dy * dz + (p[1] - 1) * dz + p[2]].tsdfValue);
+			printf("%f\n", tsdf[p[0] * dy * dz + p[1] * dz + (p[2] + 1)].tsdfValue);
+			printf("%f\n", tsdf[p[0] * dy * dz + p[1] * dz + (p[2] - 1)].tsdfValue);
+
+			printf("error");
+		}*/
 		n.normalize();
 
 		return true;
@@ -102,9 +125,9 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 				// printf("%d \n", dist);
 				if (!isnan(dist))
 				{
+					// if (prevDist > 0 && dist <= 0 && s > 0)
+					// 	break;
 					if (prevDist > 0 && dist <= 0 && s > 0)
-						break;
-					if (prevDist < 0 && dist >= 0 && s > 0)
 					{	
 						// Eigen::Vector3f interpolatedP = getInterpolatedIntersection(vol, rayOrigin, rayDir, step);
 						Eigen::Vector3f n;
@@ -250,8 +273,8 @@ std::vector<Eigen::Vector3f> Raycasting::getNormals()
 {
     std::vector<Eigen::Vector3f> nrmls;
 
-    for (unsigned int i = 0; i < width * height; ++i)
-        nrmls.push_back(vertices[i].normal);
+	for (unsigned int i = 0; i < width * height; ++i)
+		nrmls.push_back(vertices[i].normal);
 
     return nrmls;
 }

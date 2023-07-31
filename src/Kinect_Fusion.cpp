@@ -20,7 +20,7 @@ int main(){
     
     //initiating grid
     Eigen::Vector3d gridSize(4,4,4); 
-    unsigned int res = 256;
+    unsigned int res = 128;
     kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass.cast<double>());
     float mu = 0.02;
     
@@ -36,7 +36,7 @@ int main(){
         // Frame_Pyramid prev_frame(s_dir + "\\" + filenames[file_idx]);
         prev_frame.set_T_gk(T);
 
-        // prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G_previous" + std::to_string(file_idx) + ".obj");
+        prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs\\point_clouds\\pc_G_previous" + std::to_string(file_idx) + ".obj");
 
         Frame_Pyramid curr_frame_(s_dir + "\\" + filenames[file_idx + 1]);
         curr_frame_.set_T_gk(T); // done so converging is faster (theoretically + still testing)
@@ -45,8 +45,8 @@ int main(){
         T = icp.pyramid_ICP(false);
 
         grid.updateGlobalTSDF(*curr_frame_.Depth_Pyramid[0], mu);
-        // curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/pc" +std::to_string(file_idx) + ".obj");
-        // curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G" +std::to_string(file_idx) + ".obj");
+        curr_frame_.Depth_Pyramid[0]->save_off_format("outputs\\point_clouds\\pc" +std::to_string(file_idx) + ".obj");
+        curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs\\point_clouds\\pc_G" +std::to_string(file_idx) + ".obj");
 
         if(file_idx != 0 && file_idx % 5 == 0) mesher -> Mesher(grid, "outputs\\meshes\\mesh" + std::to_string(file_idx) + ".off");
     }
