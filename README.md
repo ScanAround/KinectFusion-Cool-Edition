@@ -11,6 +11,11 @@ We aimed to parallelize all parts of the project, and so we make use of cuda for
 - **CUDA 12.2**
 - (Optional) **Intel® RealSense™ SDK 2.0**
 
+## Results
+
+![](KinectFusion512.png)
+![](KinectFusion256.png)
+
 ## Instructions
 ```
 mkdir build && cd build
