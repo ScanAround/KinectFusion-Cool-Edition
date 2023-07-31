@@ -112,7 +112,13 @@
         "tensor": "cpp",
         "__node_handle": "cpp",
         "*.ipp": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "qr": "cpp",
+        "eigenvalues": "cpp",
+        "geometry": "cpp",
+        "svd": "cpp",
+        "cholesky": "cpp",
+        "lu": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "enabled",
     "cmake.configureOnOpen": false
