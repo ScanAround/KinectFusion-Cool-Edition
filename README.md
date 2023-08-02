@@ -25,7 +25,8 @@ cd ..
 ./KinectFusionApp_Cuda
 ```
 
-Make sure you create the additional outputs and  folder structure as follows:
+Make sure you create the additional empty outputs folder and add the data folder.
+The structure looks as follows:
 ```
 ┣ 📂src
 ┣ 📂build
