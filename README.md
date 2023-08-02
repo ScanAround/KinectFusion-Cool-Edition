@@ -17,15 +17,9 @@ We aimed to parallelize all parts of the project, and so we make use of cuda for
 ![](KinectFusion256.png)
 
 ## Instructions
-```
-mkdir build && cd build
-cmake ..
-make
-cd ..
-./KinectFusionApp_Cuda
-```
 
 Make sure you create the additional empty outputs folder and add the data folder.
+
 The structure looks as follows:
 ```
 ┣ 📂src
@@ -36,6 +30,15 @@ The structure looks as follows:
 ┣ 📂outputs
 ┃ ┗ 📂point_clouds
 ┃ ┗ 📂meshes
+```
+
+To run:
+```
+mkdir build && cd build
+cmake ..
+make
+cd ..
+./KinectFusionApp_Cuda
 ```
 ## (Windows) Instructions
 
