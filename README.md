@@ -24,6 +24,18 @@ make
 cd ..
 ./KinectFusionApp_Cuda
 ```
+
+Make sure you create the additional outputs and  folder structure as follows:
+```
+┣ 📂src
+┣ 📂build
+┣ 📂data
+┃ ┗ 📂rgbd_dataset_freiburg1_xyz
+┃   ┗ 📂depth
+┣ 📂outputs
+┃ ┗ 📂point_clouds
+┃ ┗ 📂meshes
+```
 ## (Windows) Instructions
 
 In order to run the code in Windows systems, use the `main_windows` branch. There you will find the CMakeLists.txt. it is necessary to compile with C++17 or higher. 
