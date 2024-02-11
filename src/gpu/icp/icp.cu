@@ -113,7 +113,7 @@ void sum_over_blocks(
         if(idx < size){
             for(int i = 0; i < 21; ++i){
                 atomicAdd(&dA_sum[0](i), dA_arr[idx](i));
-                atomicAdd(&db_sum[0](i), db_arr[idx](i));
+                if (i < 6) atomicAdd(&db_sum[0](i), db_arr[idx](i));
             }
         }
 }
@@ -207,10 +207,11 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
             dA_arr, db_arr, curr_frame.width * curr_frame.height,   
             dA_sum, db_sum
         );
-        // cudaDeviceSynchronize();
+        cudaDeviceSynchronize();
 
 
         cudaStatus0 = cudaMemcpy(&LA, dA_sum, sizeof(Eigen::Matrix<float, 21, 1>), cudaMemcpyDeviceToHost);
+        // __syncthreads();
         if(cudaStatus0 != cudaSuccess){
             std::cout << "Problem in Cuda Copy of dA to A: " << cudaGetErrorString(cudaStatus0) << std::endl;
         }
