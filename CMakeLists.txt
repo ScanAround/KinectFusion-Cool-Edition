@@ -58,13 +58,13 @@ target_link_libraries(KinectFusionApp_Cuda KinectFusionLib ${FREEIMAGE_LIBRARIES
 
 # Suppress deprecated warnings and some others
 # Narrowing warnings should be solved ideally
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
-    target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
-    target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
-endif()
+# if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#     target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
+#     target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated -Wno-ignored-attributes -Wno-narrowing)
+# elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+#     target_compile_options(KinectFusionLib PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
+#     target_compile_options(KinectFusionApp_Cuda PRIVATE -Wno-deprecated-enum-enum-conversion -Wno-ignored-attributes -Wno-c++11-narrowing)
+# endif()
 
 # This can be run as follows:
 # mkdir build
