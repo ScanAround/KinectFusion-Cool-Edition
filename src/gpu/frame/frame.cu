@@ -61,19 +61,21 @@ void calculate_Vks_cuda(Eigen::Matrix3f K_i,
 	float* Depth_k, int* dMk_0, int* dMk_1,
 	int width, int height) {
 
-	int id_x = blockIdx.x * blockDim.x + threadIdx.x;
-	int id_y = blockIdx.y * blockDim.y + threadIdx.y;
+	int id_x = threadIdx.x; // pixels per row
+    int id_y = blockIdx.x;  // rows
+	
 	Eigen::Vector3f u_dot;
 
-	if (id_y < width && id_x < height) {
-		u_dot << id_y, id_x, 1;
-		if (Depth_k[id_x * width + id_y] == -INFINITY || Depth_k[id_x * width + id_y] <= 0.0f) {
-			dV_k[id_x * width + id_y] = Eigen::Vector3f(-INFINITY, -INFINITY, -INFINITY);
-			dMk_0[id_x * width + id_y] = id_x * width + id_y;
+	 if(id_x < width && id_y < height) {
+		int i = id_y * width + id_x;
+		u_dot << id_x, id_y, 1;
+		if (Depth_k[i] == -INFINITY || Depth_k[i] <= 0.0f) {
+			dV_k[i] = Eigen::Vector3f(-INFINITY, -INFINITY, -INFINITY);
+			dMk_0[i] = i;
 		}
 		else {
-			dV_k[id_x * width + id_y] = Depth_k[id_x * width + id_y] * 255.0f * 255.0f / 5000.0f * K_i * u_dot;
-			dMk_1[id_x * width + id_y] = id_x * width + id_y;
+			dV_k[i] = Depth_k[i] * 255.0f * 255.0f / 5000.0f * K_i * u_dot;
+			dMk_1[i] = i;
 		}
 	}
 }
@@ -84,17 +86,47 @@ void calculate_Nks_cuda(Eigen::Vector3f* dV_k,
 	int width, int height)
 {
 
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
-	if (i < height - 1 && j < width - 1) {
-		Eigen::Vector3f ans = (dV_k[i * width + j + 1] - dV_k[(i)*width + j]).cross((dV_k[(i + 1) * width + j] - dV_k[(i)*width + j]));
+	int id_x = threadIdx.x; // pixels per row
+    int id_y = blockIdx.x;  // rows
+	if(id_x < width - 1 && id_y < height - 1){
+		
+		int idx_vector = id_y * width + id_x;
+		int idx_vector_right = id_y * width + id_x + 1;
+		int idx_vector_down = (id_y + 1) * width + id_x;
+
+		Eigen::Vector3f ans = (dV_k[idx_vector_right] - dV_k[idx_vector]).cross((dV_k[idx_vector_down] - dV_k[idx_vector]));
 		ans.normalize();
-		dN_k[i * width + j] = ans;
+		dN_k[idx_vector] = ans;
 	}
-	else {
-		Eigen::Vector3f ans = (dV_k[i * width + (width - 1) - 1] - dV_k[(i)*width + (width - 1)]).cross((dV_k[(i + 1) * width + (width - 1)] - dV_k[(i)*width + (width - 1)]));
+	else if(id_x == width - 1 && id_y < height - 1) {
+
+		int idx_vector = id_y * width + id_x;
+		int idx_vector_left = id_y * width + id_x - 1;
+		int idx_vector_down = (id_y + 1) * width + id_x;
+
+		Eigen::Vector3f ans = (dV_k[idx_vector_left] - dV_k[idx_vector]).cross((dV_k[idx_vector_down] - dV_k[idx_vector]));
 		ans.normalize();
-		dN_k[i * width + j] = ans;
+		dN_k[idx_vector] = ans;
+	}
+	else if(id_x < width - 1 && id_y == height - 1) {
+
+		int idx_vector = id_y * width + id_x;
+		int idx_vector_right = id_y * width + id_x + 1;
+		int idx_vector_up = (id_y - 1) * width + id_x;
+
+		Eigen::Vector3f ans = (dV_k[idx_vector_right] - dV_k[idx_vector]).cross((dV_k[idx_vector_up] - dV_k[idx_vector]));
+		ans.normalize();
+		dN_k[idx_vector] = ans;
+	}
+	else if(id_x == width - 1 && id_y == height - 1) {
+
+		int idx_vector = id_y * width + id_x;
+		int idx_vector_left = id_y * width + id_x - 1;
+		int idx_vector_up = (id_y - 1) * width + id_x;
+
+		Eigen::Vector3f ans = (dV_k[idx_vector_left] - dV_k[idx_vector]).cross((dV_k[idx_vector_up] - dV_k[idx_vector]));
+		ans.normalize();
+		dN_k[idx_vector] = ans;
 	}
 
 
@@ -117,20 +149,20 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks()
 	M_k1.resize(width * height);
 	float* filtered_img_gpu;
 
-	cudaError_t cudaStatus1 = cudaMalloc(&dV_k, height * width * sizeof(Eigen::Vector3f));
+	cudaError_t cudaStatus1 = cudaMallocManaged(&dV_k, height * width * sizeof(Eigen::Vector3f));
 	if (cudaStatus1 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus1) << std::endl;
 	};
-	cudaError_t cudaStatus4 = cudaMalloc(&dMk_0, height * width * sizeof(float));
+	cudaError_t cudaStatus4 = cudaMallocManaged(&dMk_0, height * width * sizeof(float));
 	if (cudaStatus4 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus4) << std::endl;
 	};
-	cudaError_t cudaStatus3 = cudaMalloc(&dMk_1, width * height * sizeof(float));
+	cudaError_t cudaStatus3 = cudaMallocManaged(&dMk_1, width * height * sizeof(float));
 	if (cudaStatus3 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus3) << std::endl;
 	};
 
-	cudaError_t cudaStatus10 = cudaMalloc(&filtered_img_gpu, height * width * sizeof(float));
+	cudaError_t cudaStatus10 = cudaMallocManaged(&filtered_img_gpu, height * width * sizeof(float));
 	if (cudaStatus10 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus10) << std::endl;
 	};
@@ -139,11 +171,11 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks()
 		std::cout << "Problem in Copying1212: " << cudaGetErrorString(cudaStatus3) << std::endl;
 	};
 
-	dim3 threadsPerBlock(16, 16);
-	dim3 numBlocks(height / threadsPerBlock.x, width / threadsPerBlock.y);
-	calculate_Vks_cuda << <numBlocks, threadsPerBlock >> > (K_i, dV_k, filtered_img_gpu, dMk_0, dMk_1, width, height);
-	cudaDeviceSynchronize();
-
+	int block_num = height;
+    int thread_num = width;
+	
+	calculate_Vks_cuda <<< block_num, thread_num >>> (K_i, dV_k, filtered_img_gpu, dMk_0, dMk_1, width, height);
+	// cudaDeviceSynchronize();
 
 	cudaError_t cudaStatus2 = cudaMemcpy(V_k.data(), dV_k, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
 	if (cudaStatus2 != cudaSuccess) {
@@ -171,11 +203,11 @@ std::vector<Eigen::Vector3f>  Frame::calculate_Nks()
 	Eigen::Vector3f* dN_k;
 	Eigen::Vector3f* V_k_array;
 
-	cudaError_t cudaStatus1 = cudaMalloc(&dN_k, height * width * sizeof(Eigen::Vector3f));
+	cudaError_t cudaStatus1 = cudaMallocManaged(&dN_k, height * width * sizeof(Eigen::Vector3f));
 	if (cudaStatus1 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus1) << std::endl;
 	};
-	cudaError_t cudaStatus2 = cudaMalloc(&V_k_array, height * width * sizeof(Eigen::Vector3f));
+	cudaError_t cudaStatus2 = cudaMallocManaged(&V_k_array, height * width * sizeof(Eigen::Vector3f));
 	if (cudaStatus2 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus2) << std::endl;
 	};
@@ -184,9 +216,9 @@ std::vector<Eigen::Vector3f>  Frame::calculate_Nks()
 		std::cout << "Problem in Copying3: " << cudaGetErrorString(cudaStatus3) << std::endl;
 	};
 
-	dim3 threadsPerBlock(16, 16);
-	dim3 numBlocks(height / threadsPerBlock.x, width / threadsPerBlock.y);
-	calculate_Nks_cuda << <numBlocks, threadsPerBlock >> > (V_k_array, dN_k, width, height);
+	int block_num = height;
+    int thread_num = width;
+	calculate_Nks_cuda <<<block_num, thread_num >>> (V_k_array, dN_k, width, height);
 	cudaDeviceSynchronize();
 
 
@@ -210,11 +242,11 @@ float* Frame::bilateralFilter_cu(int diameter, double sigmaS, double sigmaR) {
 	dim3 threadsPerBlock(16, 16);
 	dim3 numBlocks(height / threadsPerBlock.x, width / threadsPerBlock.y);
 
-	cudaError_t cudaStatus1 = cudaMalloc(&filteredImage, height * width * sizeof(float));
+	cudaError_t cudaStatus1 = cudaMallocManaged(&filteredImage, height * width * sizeof(float));
 	if (cudaStatus1 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus1) << std::endl;
 	};
-	cudaError_t cudaStatus4 = cudaMalloc(&depthMap, height * width * sizeof(float));
+	cudaError_t cudaStatus4 = cudaMallocManaged(&depthMap, height * width * sizeof(float));
 	if (cudaStatus4 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus4) << std::endl;
 	};
