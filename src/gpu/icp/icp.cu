@@ -30,9 +30,9 @@ Eigen::Vector2i vec_to_pixel(
 
   Eigen::Vector2i u;
   if(u_dot[0] >= 0 
-  && u_dot[0] <= width 
+  && u_dot[0] < width 
   && u_dot[1] >= 0 
-  && u_dot[1] <= height){
+  && u_dot[1] < height){
       u << int(u_dot[0]), int(u_dot[1]);
   }
   else{
@@ -65,9 +65,8 @@ void A_b_finder_block(
             //projecting back to previous frame pixels
             Eigen::Vector2i pixel = vec_to_pixel(curr_V_k_t, R_prev_i, t_prev_i, K, width, height);
             int idx_in_prev = pixel[1]*width + pixel[0];           
-
-            // normals aren't calculated in last row so check if pixel is before last row
-            if(idx_in_prev < (height-1) * width){
+            
+            if(idx_in_prev < height * width){
                 // checking if normals are valid in previous frame
                 if(!isnan(prev_N_gk[idx_in_prev][0]) 
                 && !isnan(prev_N_gk[idx_in_prev][1]) 
@@ -90,12 +89,11 @@ void A_b_finder_block(
 
                             // might want to want to change dA_arr from eigen matrix to float array
                             // atomicAdd to stop race sync problems
+                            // __syncthreads();
                             for(int element = 0; element < 21 ; ++element){
-                                atomicAdd(&dA_arr[id_y](element), _A(element));
-                            }
-                            for(int element = 0; element < 6 ; ++element){
-                                atomicAdd(&db_arr[id_y](element), A_jT(element) * (n_i.dot(d_i) - n_i.dot(s_i)));
-                            }                            
+                                atomicAdd(&dA_arr[id_y](element), _A.data()[element]);
+                                if (element < 6) atomicAdd(&db_arr[id_y](element), A_jT.data()[element] * (n_i.dot(d_i) - n_i.dot(s_i)));
+                            }                 
                         }
                     }
                 }
@@ -250,7 +248,16 @@ Eigen::Matrix4f ICP::point_to_plane_solver(Frame & curr_frame, Frame & prev_fram
 
         // curr_frame_pyramid->set_T_gk(T_gk_z);
         // curr_frame_pyramid -> Depth_Pyramid[0]->save_G_off_format("iter" + std::to_string(i) + ".obj");
+        cudaFree(dA_arr);
+        cudaFree(dA_sum);
+        cudaFree(db_arr);
+        cudaFree(db_sum);
     }
+
+    cudaFree(curr_V_k);
+    cudaFree(curr_N_k);
+    cudaFree(prev_V_gk);
+    cudaFree(prev_N_gk);
         
     return T_gk_z;
     
@@ -264,7 +271,7 @@ Eigen::Matrix4f ICP::pyramid_ICP(bool cuda){
     // curr_frame_pyramid -> Depth_Pyramid[2]->save_off_format("outputs/point_clouds/pc_level2.obj");
 
     std::cout << "Registering 2nd Frame Pyramid Level" << std::endl;
-    T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[1], *prev_frame_pyramid -> Depth_Pyramid[1], 5, cuda);
+    T = this -> point_to_plane_solver(*curr_frame_pyramid -> Depth_Pyramid[1], *prev_frame_pyramid -> Depth_Pyramid[1], 4, cuda);
     curr_frame_pyramid -> set_T_gk(T);
     // curr_frame_pyramid -> Depth_Pyramid[1]->save_off_format("outputs/point_clouds/pc_level1.obj");
     
