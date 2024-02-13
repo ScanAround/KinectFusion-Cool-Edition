@@ -77,6 +77,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 		unsigned int marchingSteps = 20000;
 
 		Eigen::Vector3f rayOrigin = worldToGrid(translation, min, max, ddx, ddy, ddz);
+		Eigen::Vector3i rayOrigin_i = rayOrigin.cast<int>();
 		Eigen::Vector3f rayNext(float(i), float(j), 1.0f);
 		Eigen::Vector3f rayNextCameraSpace = intrinsicsInv * rayNext;
 		Eigen::Vector3f rayNextWorldSpace = rotation * rayNextCameraSpace + translation;
@@ -85,7 +86,8 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 		Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
 		rayDir.normalize(); 
 
-		float step = 1.0f;
+		float step = 7.0f;
+		// printf("first step: %f \n", step);
 		double prevDist = 0;
 		bool intersected = false;
 
@@ -119,10 +121,11 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 					}
 					prevDist = dist;
 					// step += dist * 0.25f; 
-					step += 1.0f;
+					step += dist;
+					// printf("step s: %f", step);
 				}
 				else
-					step += 1.0f;
+					step += 7.0f;
 				
 			}
 			else
@@ -131,8 +134,9 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 				if (intersected)
 					break;
 				// If not, conitnue traversing until finding intersection
-				step += 5.0f;
-				continue;
+				auto dist = tsdf[pGrid[0]*dy*dz + pGrid[1]*dz + pGrid[2]].tsdfValue; 
+				if(!isnan(dist)) step += dist;
+				else step += 7.0f;
 			}						
 		}
 	}
@@ -180,16 +184,10 @@ void Raycasting::castAllCuda()
 {
     // Vertex *vertices;
 	Vertex *verticesCuda;
-	kinect_fusion::Voxel *volume;
 
 	// vertices = (Vertex*)malloc(width * height * sizeof(Vertex));
 
-	cudaError_t cudaStatusVol = cudaMallocManaged(&volume, tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel));
 	cudaError_t cudaStatusVertices = cudaMallocManaged(&verticesCuda, width * height * sizeof(Vertex));
-	if(cudaStatusVol != cudaSuccess)
-	{
-    	std::cout << "Problem in CudaMallocVol: " << cudaGetErrorString(cudaStatusVol) << std::endl;
-    }
 	if(cudaStatusVertices != cudaSuccess)
 	{
     	std::cout << "Problem in CudaMallocVertices: " << cudaGetErrorString(cudaStatusVertices) << std::endl;
@@ -206,18 +204,13 @@ void Raycasting::castAllCuda()
 
 	// std::cout << tsdf.grid[0].position << std::endl;
 
-	auto cudaCpyVol = cudaMemcpy(volume, tsdf.getGrid().data(), tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel), cudaMemcpyHostToDevice);
-	auto cudaCpyVertices = cudaMemcpy(verticesCuda, vertices, width * height * sizeof(Vertex), cudaMemcpyHostToDevice);
-	if(cudaCpyVol != cudaSuccess)
-	{
-    	std::cout << "Problem in Assignment Vol: " << cudaCpyVol <<std::endl;
-    }
-	if(cudaCpyVertices != cudaSuccess)
-	{
-    	std::cout << "Problem in Assignment Vol: " << cudaCpyVertices <<std::endl;
-    }
+	// auto cudaCpyVertices = cudaMemcpy(verticesCuda, vertices, width * height * sizeof(Vertex), cudaMemcpyHostToDevice);
+	// if(cudaCpyVertices != cudaSuccess)
+	// {
+    // 	std::cout << "Problem in Assignment Vol: " << cudaCpyVertices <<std::endl;
+    // }
 
-	castOneCuda <<<height, width>>> (volume, verticesCuda, 
+	castOneCuda <<<height, width>>> (tsdf.get_cu_grid(), verticesCuda, 
 							         extrinsincs, cameraCenter, intrinsics, intrinsics.inverse(),
 			 				         tsdf.getMin(), tsdf.getMax(), 
 			 				         width, height, tsdf.getDimX(), tsdf.getDimY(), tsdf.getDimZ(), tsdf.getSizeX(), tsdf.getSizeY(), tsdf.getSizeZ());
@@ -231,7 +224,6 @@ void Raycasting::castAllCuda()
 
 	// writePointCloud(".\\cuda_out\\pointcloud.obj", vertices, width * height);
 
-	cudaFree(volume);
 	cudaFree(verticesCuda);
 	// free(vertices);
 	// freeCuda();
