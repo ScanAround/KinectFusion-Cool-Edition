@@ -10,13 +10,13 @@
 #define MAX_MARCHING_STEPS 20000
 #define MINF -std::numeric_limits<float>::infinity()
 
-struct Vertex
-{
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+// struct Vertex
+// {
+// 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	Eigen::Vector3f position;
-	Eigen::Vector3f normal;
-};
+// 	Eigen::Vector3f position;
+// 	Eigen::Vector3f normal;
+// };
 
 class Raycasting
 {
@@ -28,7 +28,7 @@ public:
 
 	~Raycasting();
 
-	Vertex castOne(const unsigned int i, const unsigned int j);
+	// Vertex castOne(const unsigned int i, const unsigned int j);
 
 	void castAll();
 
@@ -49,8 +49,9 @@ private:
 	const Eigen::Matrix3f extrinsincs;
 	const Eigen::Vector3f cameraCenter;
 
-	Vertex *vertices;
-	// std::vector<Vertex> vertices;
+	// Vertex *vertices;
+	std::vector<Eigen::Vector3f> V_ks;
+	std::vector<Eigen::Vector3f> N_ks;
 
 	Eigen::Matrix3f intrinsics;
 
