@@ -22,9 +22,9 @@ int main(){
     
     //initiating grid
     Eigen::Vector3d gridSize(4,4,4); 
-    unsigned int res = 128;
+    unsigned int res = 256;
     kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass.cast<double>());
-    float mu = 0.02;
+    float mu = 10.0;
     
     //somehow we're getting a problem because of our initial T_gk probably
     grid.updateGlobalTSDF(*curr_frame.Depth_Pyramid[0], mu);
