@@ -256,7 +256,7 @@ float* Frame::bilateralFilter_cu(int diameter, double sigmaS, double sigmaR) {
 	};
 
 
-	apply_bilateral_cuda << <numBlocks, threadsPerBlock >> > (depthMap, filteredImage, diameter, sigmaS, sigmaR, width, height);
+	apply_bilateral_cuda <<< numBlocks, threadsPerBlock >>> (depthMap, filteredImage, diameter, sigmaS, sigmaR, width, height);
 	cudaDeviceSynchronize();
 
 	cudaError_t cudaStatus2 = cudaMemcpy(filteredImage_final, filteredImage, width * height * sizeof(float), cudaMemcpyDeviceToHost);
@@ -362,7 +362,7 @@ Frame::~Frame() {
 void Frame::process_image(float sigma_r, float sigma_s, int filter_size, bool apply_bilateral) {
 	
 	if (apply_bilateral) {
-		Depth_k = bilateralFilter_cu(15, 3.0, 0.01);
+		Depth_k = bilateralFilter_cu(3, 3.0, 0.01);
 	}
 	else
 	{
