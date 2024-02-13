@@ -86,7 +86,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Eigen::Vector3f* dV_ks, Eigen::Vect
 		Eigen::Vector3f rayDir = rayNextGridSpace - rayOrigin;
 		rayDir.normalize(); 
 
-		float step = 7.0f;
+		float step = 1.0f;
 		// printf("first step: %f \n", step);
 		double prevDist = 0;
 		bool intersected = false;
@@ -125,7 +125,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Eigen::Vector3f* dV_ks, Eigen::Vect
 					// printf("step s: %f", step);
 				}
 				else
-					step += 7.0f;
+					step += 1.0f;
 				
 			}
 			else
@@ -134,7 +134,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Eigen::Vector3f* dV_ks, Eigen::Vect
 				if (intersected)
 					break;
 				// If not, conitnue traversing until finding intersection
-				step += 7.0f;
+				step += 1.0f;
 			}						
 		}
 	}
@@ -143,11 +143,8 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Eigen::Vector3f* dV_ks, Eigen::Vect
 /* DEFINITIONS FROM RAYCASTING.H */
 
 Raycasting::Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 
-tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
-{
-	V_ks.resize(width * height);
-	N_ks.resize(width * height);
-    
+tsdf(&_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
+{   
 	width = 640;
     height = 480;
     intrinsics <<   525.0f, 0.0f, 319.5f,
@@ -173,6 +170,9 @@ void Raycasting::writePointCloud(const std::string& filename)
 
 void Raycasting::castAllCuda()
 {
+	V_ks.resize(width * height);
+	N_ks.resize(width * height);
+
     // Vertex *vertices;
 	Eigen::Vector3f* dV_ks;
 	Eigen::Vector3f* dN_ks;
@@ -191,11 +191,11 @@ void Raycasting::castAllCuda()
     	std::cout << "Problem in CudaMallocN_ks: " << cudaGetErrorString(cudaStatusNs) << std::endl;
     }
 
-	castOneCuda <<<height, width>>> (tsdf.get_cu_grid(), dV_ks, dN_ks, 
+	castOneCuda <<<height, width>>> (tsdf->get_cu_grid(), dV_ks, dN_ks, 
 							         extrinsincs, cameraCenter, intrinsics, intrinsics.inverse(),
-			 				         tsdf.getMin(), tsdf.getMax(), 
-			 				         width, height, tsdf.getDimX(), tsdf.getDimY(), tsdf.getDimZ(), tsdf.getSizeX(), tsdf.getSizeY(), tsdf.getSizeZ());
-	cudaDeviceSynchronize();
+			 				         tsdf->getMin(), tsdf->getMax(), 
+			 				         width, height, tsdf->getDimX(), tsdf->getDimY(), tsdf->getDimZ(), tsdf->getSizeX(), tsdf->getSizeY(), tsdf->getSizeZ());
+	// cudaDeviceSynchronize();
 
 	auto cudaCpy0 = cudaMemcpy(V_ks.data(), dV_ks, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
 	if(cudaCpy0 != cudaSuccess)
