@@ -24,13 +24,14 @@ int main(){
     Eigen::Vector3d gridSize(4,4,4); 
     unsigned int res = 256;
     kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass.cast<double>());
-    float mu = 10.0;
+    float mu = 0.1;
+    // float mu = 3.0;
     
     //somehow we're getting a problem because of our initial T_gk probably
     grid.updateGlobalTSDF(*curr_frame.Depth_Pyramid[0], mu);
     
 
-    mesher -> Mesher(grid, "outputs/meshes/mesh_1.off");
+    mesher -> Mesher(grid, "outputs/meshes/mesh1.off");
     auto T = curr_frame.T_gk;
 
     for(int file_idx = 0; file_idx < filenames.size()-1; ++file_idx){
@@ -48,7 +49,7 @@ int main(){
         Frame_Pyramid curr_frame_(s_dir + "/" + filenames[file_idx + 1]);
         curr_frame_.set_T_gk(T); // done so converging is faster (theoretically + still testing)
         
-        ICP icp(curr_frame_, prev_frame, 0.05f, 0.95f);
+        ICP icp(curr_frame_, prev_frame, 0.045f, 0.95f);
         
         auto icp_end = std::chrono::high_resolution_clock::now();
         
@@ -70,7 +71,7 @@ int main(){
         std::cout << "tsdf time: " << tsdf_duration.count() << std::endl;
         std::cout << "total time: " << total_duration.count() << std::endl;
 
-        if(file_idx != 0 && file_idx % 25 == 0) {
+        if(file_idx != 0 && file_idx % 200 == 0) {
             mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
         }
     }
