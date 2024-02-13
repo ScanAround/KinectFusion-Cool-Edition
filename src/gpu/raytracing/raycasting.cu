@@ -145,7 +145,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 /* DEFINITIONS FROM RAYCASTING.H */
 
 Raycasting::Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 
-tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
+tsdf(&_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
 {
     width = 640;
     height = 480;
@@ -210,10 +210,10 @@ void Raycasting::castAllCuda()
     // 	std::cout << "Problem in Assignment Vol: " << cudaCpyVertices <<std::endl;
     // }
 
-	castOneCuda <<<height, width>>> (tsdf.get_cu_grid(), verticesCuda, 
+	castOneCuda <<<height, width>>> (tsdf->get_cu_grid(), verticesCuda, 
 							         extrinsincs, cameraCenter, intrinsics, intrinsics.inverse(),
-			 				         tsdf.getMin(), tsdf.getMax(), 
-			 				         width, height, tsdf.getDimX(), tsdf.getDimY(), tsdf.getDimZ(), tsdf.getSizeX(), tsdf.getSizeY(), tsdf.getSizeZ());
+			 				         tsdf->getMin(), tsdf->getMax(), 
+			 				         width, height, tsdf->getDimX(), tsdf->getDimY(), tsdf->getDimZ(), tsdf->getSizeX(), tsdf->getSizeY(), tsdf->getSizeZ());
 	cudaDeviceSynchronize();
 
 	auto cudaCpy = cudaMemcpy(vertices, verticesCuda, width * height * sizeof(Vertex), cudaMemcpyDeviceToHost);

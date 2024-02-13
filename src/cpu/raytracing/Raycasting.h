@@ -55,7 +55,7 @@ private:
 	Eigen::Matrix3f intrinsics;
 
 	// Volume tsdf;
-	kinect_fusion::VoxelGrid tsdf;
+	kinect_fusion::VoxelGrid* tsdf;
 
 	unsigned int width;
 	unsigned int height;
