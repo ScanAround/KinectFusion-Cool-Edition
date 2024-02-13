@@ -25,6 +25,7 @@ int main(){
     unsigned int res = 256;
     kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass.cast<double>());
     float mu = 0.1;
+    // float mu = 3.0;
     
     //somehow we're getting a problem because of our initial T_gk probably
     grid.updateGlobalTSDF(*curr_frame.Depth_Pyramid[0], mu);
@@ -48,7 +49,7 @@ int main(){
         Frame_Pyramid curr_frame_(s_dir + "/" + filenames[file_idx + 1]);
         curr_frame_.set_T_gk(T); // done so converging is faster (theoretically + still testing)
         
-        ICP icp(curr_frame_, prev_frame, 0.05f, 0.95f);
+        ICP icp(curr_frame_, prev_frame, 0.045f, 0.95f);
         
         auto icp_end = std::chrono::high_resolution_clock::now();
         
