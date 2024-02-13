@@ -29,7 +29,7 @@ private:
   double truncatedSignedDistanceFunction(double eta, double mu);
 
 public:
-
+  Voxel* get_cu_grid(){return cu_grid;}
   // Let's say that dimX, dimY and dimZ are 512 and the grid size is 4m x 4m x 4m. The voxel size 
   // is calculated as follows:
   // gridSize is a vector representing the overall size of the grid in each dimension, which in 

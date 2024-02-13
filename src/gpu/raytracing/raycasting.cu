@@ -64,7 +64,7 @@ bool computeNormal(Eigen::Vector3f& n, kinect_fusion::Voxel* tsdf, const Eigen::
 }
 
 __global__
-void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices, 
+void castOneCuda(kinect_fusion::Voxel *tsdf, Eigen::Vector3f* dV_ks, Eigen::Vector3f* dN_ks, 
 			     Eigen::Matrix3f rotation, Eigen::Vector3f translation, Eigen::Matrix3f intrinsics, Eigen::Matrix3f intrinsicsInv,
 			     Eigen::Vector3d min, Eigen::Vector3d max, 
 			     int width, int height, int dx, int dy, int dz, float ddx, float ddy, float ddz)
@@ -77,6 +77,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 		unsigned int marchingSteps = 20000;
 
 		Eigen::Vector3f rayOrigin = worldToGrid(translation, min, max, ddx, ddy, ddz);
+		Eigen::Vector3i rayOrigin_i = rayOrigin.cast<int>();
 		Eigen::Vector3f rayNext(float(i), float(j), 1.0f);
 		Eigen::Vector3f rayNextCameraSpace = intrinsicsInv * rayNext;
 		Eigen::Vector3f rayNextWorldSpace = rotation * rayNextCameraSpace + translation;
@@ -86,6 +87,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 		rayDir.normalize(); 
 
 		float step = 1.0f;
+		// printf("first step: %f \n", step);
 		double prevDist = 0;
 		bool intersected = false;
 
@@ -111,8 +113,8 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 						if(computeNormal(n, tsdf, pGrid, dx, dy, dz))
 						{
 							Eigen::Vector3f pWorld = gridToWorld(pGrid, min, max, ddx, ddy, ddz);
-							Vertex v = {pWorld, n};
-							vertices[j * width + i] = v;
+							dV_ks[j * width + i] = pWorld;
+							dN_ks[j * width + i] = n;
 						}
 					
 						break;
@@ -120,6 +122,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 					prevDist = dist;
 					// step += dist * 0.25f; 
 					step += 1.0f;
+					// printf("step s: %f", step);
 				}
 				else
 					step += 1.0f;
@@ -131,8 +134,7 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 				if (intersected)
 					break;
 				// If not, conitnue traversing until finding intersection
-				step += 5.0f;
-				continue;
+				step += 1.0f;
 			}						
 		}
 	}
@@ -141,25 +143,15 @@ void castOneCuda(kinect_fusion::Voxel *tsdf, Vertex* vertices,
 /* DEFINITIONS FROM RAYCASTING.H */
 
 Raycasting::Raycasting(kinect_fusion::VoxelGrid& _tsdf, const Eigen::Matrix3f& _extrinsics, const Eigen::Vector3f _cameraCenter): 
-tsdf(_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
-{
-    width = 640;
+tsdf(&_tsdf), extrinsincs(_extrinsics), cameraCenter(_cameraCenter)
+{   
+	width = 640;
     height = 480;
     intrinsics <<   525.0f, 0.0f, 319.5f,
                     0.0f, 525.0f, 239.5f,
                     0.0f, 0.0f, 1.0f;
 
     // Initialize the vertices array which is going to copied to GPU
-    vertices = (Vertex*)malloc(width * height * sizeof(Vertex));
-    for (unsigned int i = 0; i < width * height; ++i)
-	{
-		Eigen::Vector3f p(MINF, MINF, MINF);
-		Eigen::Vector3f n(MINF, MINF, MINF);
-		
-		Vertex v = {p, n};
-
-		vertices[i] = v;
-	}
 }
 
 void Raycasting::writePointCloud(const std::string& filename)
@@ -168,94 +160,73 @@ void Raycasting::writePointCloud(const std::string& filename)
 
 	for (unsigned int i = 0; i < width * height; ++i)
 	{
-		if (vertices[i].position[0] != MINF && vertices[i].position[1] != MINF && vertices[i].position[2] != MINF)
+		if (V_ks[i][0] != MINF && V_ks[i][1] != MINF && V_ks[i][2] != MINF)
 		{
-			file << "v " << vertices[i].position[0] << " " << vertices[i].position[1] << " " << vertices[i].position[2] << std::endl;
-			file << "vn " << vertices[i].normal[0] << " " << vertices[i].normal[1] << " " << vertices[i].normal[2] << std::endl;
+			file << "v " << V_ks[i][0] << " " << V_ks[i][1] << " " << V_ks[i][2] << std::endl;
+			file << "vn " << N_ks[i][0] << " " << N_ks[i][0] << " " << N_ks[i][2] << std::endl;
 		}
 	}
 }
 
 void Raycasting::castAllCuda()
 {
+	V_ks.resize(width * height);
+	N_ks.resize(width * height);
+
     // Vertex *vertices;
-	Vertex *verticesCuda;
-	kinect_fusion::Voxel *volume;
+	Eigen::Vector3f* dV_ks;
+	Eigen::Vector3f* dN_ks;
 
 	// vertices = (Vertex*)malloc(width * height * sizeof(Vertex));
 
-	cudaError_t cudaStatusVol = cudaMallocManaged(&volume, tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel));
-	cudaError_t cudaStatusVertices = cudaMallocManaged(&verticesCuda, width * height * sizeof(Vertex));
-	if(cudaStatusVol != cudaSuccess)
+	cudaError_t cudaStatusVs = cudaMallocManaged(&dV_ks, width * height * sizeof(Eigen::Vector3f));
+	if(cudaStatusVs != cudaSuccess)
 	{
-    	std::cout << "Problem in CudaMallocVol: " << cudaGetErrorString(cudaStatusVol) << std::endl;
+    	std::cout << "Problem in CudaMallocV_ks: " << cudaGetErrorString(cudaStatusVs) << std::endl;
     }
-	if(cudaStatusVertices != cudaSuccess)
+	
+	cudaError_t cudaStatusNs = cudaMallocManaged(&dN_ks, width * height * sizeof(Eigen::Vector3f));
+	if(cudaStatusNs != cudaSuccess)
 	{
-    	std::cout << "Problem in CudaMallocVertices: " << cudaGetErrorString(cudaStatusVertices) << std::endl;
-    }
-	// std::cout << tsdf.getGrid().data()[2].position << std::endl;
-	// std::cout << tsdf.getGrid()[2].position << std::endl;
-
-	// for (kinect_fusion::Voxel& v : tsdf.getGrid())
-	// {
-	// 	std::cout << "(" << v.position[0] << ", " << v.position[1] << ", " << v.position[2] << ", " << v.tsdfValue <<") \n" << std::endl;
-	// }
-
-	// tsdf.grid[0].position[0] = 1.0f;
-
-	// std::cout << tsdf.grid[0].position << std::endl;
-
-	auto cudaCpyVol = cudaMemcpy(volume, tsdf.getGrid().data(), tsdf.getDimX() * tsdf.getDimY() * tsdf.getDimZ() * sizeof(kinect_fusion::Voxel), cudaMemcpyHostToDevice);
-	auto cudaCpyVertices = cudaMemcpy(verticesCuda, vertices, width * height * sizeof(Vertex), cudaMemcpyHostToDevice);
-	if(cudaCpyVol != cudaSuccess)
-	{
-    	std::cout << "Problem in Assignment Vol: " << cudaCpyVol <<std::endl;
-    }
-	if(cudaCpyVertices != cudaSuccess)
-	{
-    	std::cout << "Problem in Assignment Vol: " << cudaCpyVertices <<std::endl;
+    	std::cout << "Problem in CudaMallocN_ks: " << cudaGetErrorString(cudaStatusNs) << std::endl;
     }
 
-	castOneCuda <<<height, width>>> (volume, verticesCuda, 
+	castOneCuda <<<height, width>>> (tsdf->get_cu_grid(), dV_ks, dN_ks, 
 							         extrinsincs, cameraCenter, intrinsics, intrinsics.inverse(),
-			 				         tsdf.getMin(), tsdf.getMax(), 
-			 				         width, height, tsdf.getDimX(), tsdf.getDimY(), tsdf.getDimZ(), tsdf.getSizeX(), tsdf.getSizeY(), tsdf.getSizeZ());
-	cudaDeviceSynchronize();
+			 				         tsdf->getMin(), tsdf->getMax(), 
+			 				         width, height, tsdf->getDimX(), tsdf->getDimY(), tsdf->getDimZ(), tsdf->getSizeX(), tsdf->getSizeY(), tsdf->getSizeZ());
+	// cudaDeviceSynchronize();
 
-	auto cudaCpy = cudaMemcpy(vertices, verticesCuda, width * height * sizeof(Vertex), cudaMemcpyDeviceToHost);
-	if(cudaCpy != cudaSuccess)
+	auto cudaCpy0 = cudaMemcpy(V_ks.data(), dV_ks, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
+	if(cudaCpy0 != cudaSuccess)
 	{
-     	std::cout << "Problem in Copying from device: " << cudaGetErrorString(cudaCpy) <<std::endl;
+     	std::cout << "Problem in Copying dV_k from device: " << cudaGetErrorString(cudaCpy0) <<std::endl;
+	}
+
+	auto cudaCpy1 = cudaMemcpy(N_ks.data(), dN_ks, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
+	if(cudaCpy1 != cudaSuccess)
+	{
+     	std::cout << "Problem in Copying dN_k from device: " << cudaGetErrorString(cudaCpy1) <<std::endl;
 	}
 
 	// writePointCloud(".\\cuda_out\\pointcloud.obj", vertices, width * height);
 
-	cudaFree(volume);
-	cudaFree(verticesCuda);
+	cudaFree(dV_ks);
+	cudaFree(dN_ks);
 	// free(vertices);
 	// freeCuda();
 }
 
 std::vector<Eigen::Vector3f> Raycasting::getVertices()
 {
-    std::vector<Eigen::Vector3f> vrtxs;
-    for (unsigned int i = 0; i < width * height; ++i)
-        vrtxs.push_back(vertices[i].position);
-
-    return vrtxs;
+    return V_ks;
 }
 
 std::vector<Eigen::Vector3f> Raycasting::getNormals()
 {
-    std::vector<Eigen::Vector3f> nrmls;
-
-    for (unsigned int i = 0; i < width * height; ++i)
-        nrmls.push_back(vertices[i].normal);
-
-    return nrmls;
+	return N_ks;
 }
 
-void Raycasting::freeCuda() { free(vertices); }
+void Raycasting::freeCuda() {}
 
 Raycasting::~Raycasting() { freeCuda(); }
