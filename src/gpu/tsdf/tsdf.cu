@@ -149,7 +149,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
   if(CudaAssignemnt != cudaSuccess){
     std::cout << "Problem in Assignment: " << CudaAssignemnt <<std::endl;
   }
-  auto CudaCopy = cudaMemcpy(R, curr_frame.Raw_k, sizeof(float) * curr_frame.width * curr_frame.height, cudaMemcpyHostToDevice);
+  auto CudaCopy = cudaMemcpy(R, curr_frame.Depth_k, sizeof(float) * curr_frame.width * curr_frame.height, cudaMemcpyHostToDevice);
   if(CudaCopy != cudaSuccess){
     std::cout << "Problem in Copying: " << CudaCopy <<std::endl;
   }
