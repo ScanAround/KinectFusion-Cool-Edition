@@ -59,7 +59,7 @@ __global__
 void calculate_Vks_cuda(Eigen::Matrix3f K_i,
 	Eigen::Vector3f* dV_k,
 	float* Depth_k, int* dMk_0, int* dMk_1,
-	int width, int height) {
+	int width, int height, bool online) {
 
 	int id_x = threadIdx.x; // pixels per row
     int id_y = blockIdx.x;  // rows
@@ -74,8 +74,16 @@ void calculate_Vks_cuda(Eigen::Matrix3f K_i,
 			dMk_0[i] = i;
 		}
 		else {
-			dV_k[i] = Depth_k[i] * 255.0f * 255.0f / 5000.0f * K_i * u_dot;
-			dMk_1[i] = i;
+			// printf("I'm here %f", Depth_k[i]);
+			if(online){
+				dV_k[i] = Depth_k[i] * K_i * u_dot;
+				dMk_1[i] = i;
+			}
+			else {
+				dV_k[i] = Depth_k[i] * 255.0f * 255.0f / 5000.0f *K_i * u_dot;
+				dMk_1[i] = i;
+			}
+			
 		}
 	}
 }
@@ -174,7 +182,7 @@ std::vector<Eigen::Vector3f> Frame::calculate_Vks()
 	int block_num = height;
     int thread_num = width;
 	
-	calculate_Vks_cuda <<< block_num, thread_num >>> (K_i, dV_k, filtered_img_gpu, dMk_0, dMk_1, width, height);
+	calculate_Vks_cuda <<< block_num, thread_num >>> (K_i, dV_k, filtered_img_gpu, dMk_0, dMk_1, width, height, true);
 	// cudaDeviceSynchronize();
 
 	cudaError_t cudaStatus2 = cudaMemcpy(V_k.data(), dV_k, width * height * sizeof(Eigen::Vector3f), cudaMemcpyDeviceToHost);
@@ -250,7 +258,7 @@ float* Frame::bilateralFilter_cu(int diameter, double sigmaS, double sigmaR) {
 	if (cudaStatus4 != cudaSuccess) {
 		std::cout << "Problem in memory allocation: " << cudaGetErrorString(cudaStatus4) << std::endl;
 	};
-	cudaError_t cudaStatus3 = cudaMemcpy(depthMap, Raw_k, width * height * sizeof(float), cudaMemcpyHostToDevice);
+	cudaError_t cudaStatus3 = cudaMemcpy(depthMap, Depth_k, width * height * sizeof(float), cudaMemcpyHostToDevice);
 	if (cudaStatus3 != cudaSuccess) {
 		std::cout << "Problem in Copying: " << cudaGetErrorString(cudaStatus3) << std::endl;
 	};
@@ -315,6 +323,9 @@ Frame::Frame(std::vector<float> depthMap, Eigen::Matrix4f T_gk, Eigen::Matrix3f 
 	K(1,2) /= sub_sampling_rate;
 	
 	Depth_k = new float[width * height]; // have to rescale according to the data 
+	for(int i = 0; i < width*height; i++){
+		Depth_k[i] = depthMap[i];
+	}
 }
 
 Frame::Frame(const char* image_dir, Eigen::Matrix4f T_gk, float sub_sampling_rate) :
