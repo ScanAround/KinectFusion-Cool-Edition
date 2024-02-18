@@ -124,10 +124,11 @@ public:
     Eigen::Vector3f center_of_mass = Eigen::Vector3f::Zero();
 
     FIBITMAP * dib = nullptr;
+    
+    float *Depth_k;
 private:
     // FIBITMAP * dib;
     //Initial Raw Depth Map
     //Depth Map
-    float * Depth_k = nullptr;
 };
 #endif
