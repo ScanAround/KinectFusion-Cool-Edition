@@ -5,11 +5,12 @@
 #include "cpu/raytracing/Raycasting.h"
 #include "cpu/mesher/Marching_Cubes.h"
 #include "cpu/frame/RealSense.h"
+#include "chrono"
 
 int main(){
 
     FreeImage_Initialise();
-    
+    int num_frames = 400;
     //initiating mesher
     std::unique_ptr<Marching_Cubes> mesher = std::make_unique<Marching_Cubes>();
     std::unique_ptr<RealSensor> our_sensor = std::make_unique<RealSensor>();
@@ -24,35 +25,58 @@ int main(){
     Eigen::Vector3d gridSize(4,4,4); 
     unsigned int res = 256;
     kinect_fusion::VoxelGrid grid(res ,res ,res ,gridSize, curr_frame.Depth_Pyramid[0]->center_of_mass.cast<double>());
-    float mu = 0.02;
+    float mu = 0.1;
+    // float mu = 3.0;
     
     //somehow we're getting a problem because of our initial T_gk probably
     grid.updateGlobalTSDF(*curr_frame.Depth_Pyramid[0], mu);
-    mesher -> Mesher(grid, "outputs/meshes/mesh_1.off");
+    
+
+    // mesher -> Mesher(grid, "outputs/meshes/mesh1.off");
     auto T = curr_frame.T_gk;
 
-    for(int file_idx = 0; file_idx < 100; ++file_idx){ 
+    for(int file_idx = 0; file_idx < num_frames; ++file_idx){
+        auto start = std::chrono::high_resolution_clock::now();
         Raycasting prev_r(grid, T.block(0,0,3,3), T.block(0,3,3,1));
         prev_r.castAllCuda();
+
+        auto raycast_end = std::chrono::high_resolution_clock::now();
+
         Frame_Pyramid prev_frame(prev_r.getVertices(), prev_r.getNormals(), T);
-        
-        // Frame_Pyramid prev_frame(our_sensor -> processNextFrame(), K, T);
-        // prev_frame.set_T_gk(T);
+        prev_frame.set_T_gk(T);
 
-        // prev_frame.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G_previous" + std::to_string(file_idx) + ".obj");
+        auto frame_end = std::chrono::high_resolution_clock::now();
 
-        Frame_Pyramid curr_frame_(our_sensor -> processNextFrame(), K, T);
+        Frame_Pyramid curr_frame_(our_sensor -> processNextFrame(), K);
         curr_frame_.set_T_gk(T); // done so converging is faster (theoretically + still testing)
         
-        ICP icp(curr_frame_, prev_frame, 0.1f, 0.7f);
+        ICP icp(curr_frame_, prev_frame, 0.045f, 0.95f);
+        
+        auto icp_end = std::chrono::high_resolution_clock::now();
+        
         T = icp.pyramid_ICP(false);
 
         grid.updateGlobalTSDF(*curr_frame_.Depth_Pyramid[0], mu);
-        // curr_frame_.Depth_Pyramid[0]->save_off_format("outputs/point_clouds/pc" +std::to_string(file_idx) + ".obj");
-        // curr_frame_.Depth_Pyramid[0]->save_G_off_format("outputs/point_clouds/pc_G" +std::to_string(file_idx) + ".obj");
+        
+        auto tsdf_end = std::chrono::high_resolution_clock::now();
 
-        if(file_idx != 0 && file_idx % 5 == 0) mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
+        auto raycast_duration = std::chrono::duration_cast<std::chrono::milliseconds>(raycast_end - start);
+        auto frame_duration = std::chrono::duration_cast<std::chrono::milliseconds>(frame_end - raycast_end);
+        auto icp_duration = std::chrono::duration_cast<std::chrono::milliseconds>(icp_end - frame_end);
+        auto tsdf_duration = std::chrono::duration_cast<std::chrono::milliseconds>(tsdf_end - icp_end);
+        auto total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(icp_end - start);
+        
+        std::cout << "raycast time: " << raycast_duration.count() << std::endl;
+        std::cout << "frame time: " << frame_duration.count() << std::endl;
+        std::cout << "icp time: " << icp_duration.count() << std::endl;
+        std::cout << "tsdf time: " << tsdf_duration.count() << std::endl;
+        std::cout << "total time: " << total_duration.count() << std::endl;
+
+        // if(file_idx != 0 && file_idx % 60 == 0) {
+        //     mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(file_idx) + ".off");
+        // }
     }
-
+    our_sensor -> stop();
+    mesher -> Mesher(grid, "outputs/meshes/mesh" + std::to_string(num_frames) + ".off");
     FreeImage_DeInitialise();
 }

@@ -32,8 +32,9 @@ add_library(KinectFusionLib
     src/cpu/tsdf/voxel_grid.cpp
     src/cpu/tsdf/voxel.cpp
     src/cpu/frame/Frame_Pyramid.cpp
+    src/cpu/frame/RealSense.cpp
     src/cpu/tsdf/kinect_fusion_utility.cpp
-    src/Kinect_Fusion.cpp
+    src/Online.cpp
 )
 
 # Set the C++ standard for the library target
@@ -45,9 +46,12 @@ target_include_directories(KinectFusionLib PRIVATE ${EIGEN3_INCLUDE_DIR})
 # Find FreeImage library
 find_library(FREEIMAGE_LIBRARIES freeimage)
 
+# Find RealSense library 
+find_library(REALSENSE2 realsense2)
+
 # Create the executable target for KinectFusionApp_Cuda
 add_executable(KinectFusionApp_Cuda
-    src/Kinect_Fusion.cpp
+    src/Online.cpp
 )
 
 # Set the C++ standard for the executable target
@@ -56,6 +60,7 @@ target_compile_features(KinectFusionApp_Cuda PUBLIC cxx_std_20)
 # Link your KinectFusion library and FreeImage library to the executable target
 target_link_libraries(KinectFusionApp_Cuda KinectFusionLib ${FREEIMAGE_LIBRARIES})
 
+target_link_libraries(KinectFusionApp_Cuda KinectFusionLib ${REALSENSE2})
 # Suppress deprecated warnings and some others
 # Narrowing warnings should be solved ideally
 # if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
