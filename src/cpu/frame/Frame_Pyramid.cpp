@@ -61,8 +61,17 @@ Frame_Pyramid::Frame_Pyramid(std::vector<float> depthMap,
                              int width, int height){
         
     Depth_Pyramid[0] = new Frame(depthMap, T_gk, K, width, height, 1.0f);
-    Depth_Pyramid[0] = new Frame(depthMap, T_gk, K, width, height, 2.0f);
-    Depth_Pyramid[0] = new Frame(depthMap, T_gk, K, width, height, 4.0f);
+    Depth_Pyramid[0] -> calculate_Vks();
+    Depth_Pyramid[0] -> calculate_Nks();
+
+    Depth_Pyramid[1] = new Frame(depthMap, T_gk, K, width, height, 2.0f);
+    Depth_Pyramid[1] -> calculate_Vks();
+    Depth_Pyramid[1] -> calculate_Nks();
+
+    Depth_Pyramid[2] = new Frame(depthMap, T_gk, K, width, height, 4.0f);
+    Depth_Pyramid[2] -> calculate_Vks();
+    Depth_Pyramid[2] -> calculate_Nks();
+
     this -> set_T_gk(T_gk);
 }
 
