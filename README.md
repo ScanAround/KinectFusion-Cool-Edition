@@ -13,6 +13,7 @@ We aimed to parallelize all parts of the project, and so we make use of cuda for
 
 ## Results
 
+![](Online.png)
 ![](KinectFusion512.png)
 ![](KinectFusion256.png)
 
