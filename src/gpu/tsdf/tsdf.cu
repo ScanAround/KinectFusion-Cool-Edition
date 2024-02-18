@@ -43,7 +43,7 @@ Eigen::Vector2i vec_to_pixel(const Eigen::Vector3d vec, Eigen::Matrix3d R_i, Eig
   return u;
 }
 __device__
-double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p, Eigen::Matrix3d R_i, Eigen::Vector3d t_i, Eigen::Vector3d t, float *R, int width, int height, double mu){
+double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p, Eigen::Matrix3d R_i, Eigen::Vector3d t_i, Eigen::Vector3d t, float *R, int width, int height, double mu, bool online){
   Eigen::Vector2i x = vec_to_pixel(p, R_i, t_i, K, width, height);
 
   // Compute lambda
@@ -54,7 +54,13 @@ double projectiveTSDF(Eigen::Matrix3d K, Eigen::Matrix3d K_i,  Eigen::Vector3d p
 
   // Compute eta
   // we have to convert R_k values to meters
-  double eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]) *255.0f* 255.0f / 5000.0f);
+  double eta = 0.0;
+  if(online){
+    eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]));
+  }
+  else{
+      eta = (1.0 / lambda) * (t - p).norm() - static_cast<double>((R[x[1]*width + x[0]]) *255.0f* 255.0f / 5000.0f);
+  }
 
   // Compute TSDF value
   double F_R_k_p = TSDF(eta, mu);
@@ -67,14 +73,14 @@ void update(kinect_fusion::Voxel *cu_grid,
             int dimX, int dimY, int dimZ, int dimYZ,
             Eigen::Vector3d voxelSize, Eigen::Matrix3d K, Eigen::Matrix3d K_i, Eigen::Matrix3d R_i, Eigen::Vector3d t_i, Eigen::Vector3d t, 
             float *R, int width, int height, double mu, 
-            dim3 thread_nums){
+            dim3 thread_nums, bool online){
   int id_x = threadIdx.x + blockIdx.x * thread_nums.x;
   int id_y = threadIdx.y + blockIdx.y * thread_nums.y;
   int id_z = threadIdx.z + blockIdx.z * thread_nums.z;
   if(id_x < dimX && id_y < dimY && id_z < dimZ){
     kinect_fusion::Voxel& voxel = cu_grid[id_x*dimYZ + id_y*dimZ + id_z];
     Eigen::Vector3d p(voxel.position); // The point in the global frame
-    double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, t, R, width, height, mu);
+    double F_R = projectiveTSDF(K, K_i, p, R_i, t_i, t, R, width, height, mu, online);
     if(!isnan(F_R)){
       if(isnan(voxel.tsdfValue)){
         voxel.tsdfValue = F_R;
@@ -122,6 +128,9 @@ void VoxelGrid::initializeGrid() {
 
   max = grid[(dimX-1)*dimYZ + (dimY-1)*dimZ + (dimZ-1)].position;
   min = grid[0].position;
+
+  std::cout << "max: "<< max <<std::endl;
+  std::cout << "min: "<< min <<std::endl;
 }
 
 /*
@@ -166,7 +175,7 @@ void VoxelGrid::updateGlobalTSDF(Frame& curr_frame,
   auto t = T_gk.block(0,3,3,1);
   update <<<block_nums,thread_nums>>> (cu_grid, dimX, dimY, dimZ, dimYZ, 
                                        voxelSize, K , K_i, R_i, t_i, t,
-                                       R, curr_frame.width, curr_frame.height, mu, thread_nums);
+                                       R, curr_frame.width, curr_frame.height, mu, thread_nums, true);
  cudaDeviceSynchronize();
   
   cudaError_t cudaStatus2 = cudaMemcpy(grid.data(), cu_grid, dimX * dimYZ * sizeof(Voxel), cudaMemcpyDeviceToHost);
