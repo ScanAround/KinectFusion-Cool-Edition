@@ -356,7 +356,7 @@ Frame::~Frame() {
 		dib = nullptr;
 	}
 	if (Depth_k != nullptr) { 
-		delete[] Depth_k;
+		// delete[] Depth_k;
 		Depth_k = nullptr;
 	}
 	if(Raw_k != nullptr){
